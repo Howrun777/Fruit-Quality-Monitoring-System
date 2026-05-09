@@ -1,8 +1,8 @@
 CMakeFiles/FieldDataProcessingServer.dir/src/data_process/SugarCalc.cpp.o: \
- /home/Howrun1/Cherry/CherrySystem/FieldDataProcessingServer/src/data_process/SugarCalc.cpp \
+ /home/Howrun1/FruitQualityMonitoringSystem/FieldDataProcessingServer/src/data_process/SugarCalc.cpp \
  /usr/include/stdc-predef.h \
- /home/Howrun1/Cherry/CherrySystem/FieldDataProcessingServer/src/data_process/SugarCalc.h \
- /home/Howrun1/Cherry/CherrySystem/FieldDataProcessingServer/third_party/json/json.hpp \
+ /home/Howrun1/FruitQualityMonitoringSystem/FieldDataProcessingServer/src/data_process/SugarCalc.h \
+ /home/Howrun1/FruitQualityMonitoringSystem/FieldDataProcessingServer/third_party/json/json.hpp \
  /usr/include/c++/11/algorithm /usr/include/c++/11/utility \
  /usr/include/c++/11/x86_64-redhat-linux/bits/c++config.h \
  /usr/include/bits/wordsize.h \

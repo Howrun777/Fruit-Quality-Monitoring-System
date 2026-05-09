@@ -1,7 +1,7 @@
 CMakeFiles/FieldDataProcessingServer.dir/src/utils/Logger.cpp.o: \
- /home/Howrun1/Cherry/CherrySystem/FieldDataProcessingServer/src/utils/Logger.cpp \
+ /home/Howrun1/FruitQualityMonitoringSystem/FieldDataProcessingServer/src/utils/Logger.cpp \
  /usr/include/stdc-predef.h \
- /home/Howrun1/Cherry/CherrySystem/FieldDataProcessingServer/src/utils/Logger.h \
+ /home/Howrun1/FruitQualityMonitoringSystem/FieldDataProcessingServer/src/utils/Logger.h \
  /usr/include/c++/11/string \
  /usr/include/c++/11/x86_64-redhat-linux/bits/c++config.h \
  /usr/include/bits/wordsize.h \

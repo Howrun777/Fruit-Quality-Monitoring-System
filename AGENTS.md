@@ -1,4 +1,5 @@
-# 樱桃冷链品质检测系统 (CherryColdChain)
+# FruitQualityMonitoringSystem (水果品质监测系统)
+
 
 > 本文档供 AI 助手快速了解项目结构和技术细节
 

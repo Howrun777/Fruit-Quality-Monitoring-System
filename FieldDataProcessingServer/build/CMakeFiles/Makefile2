@@ -54,10 +54,10 @@ RM = /usr/bin/cmake -E rm -f
 EQUALS = =
 
 # The top-level source directory on which CMake was run.
-CMAKE_SOURCE_DIR = /home/Howrun1/Cherry/CherrySystem/FieldDataProcessingServer
+CMAKE_SOURCE_DIR = /home/Howrun1/FruitQualityMonitoringSystem/FieldDataProcessingServer
 
 # The top-level build directory on which CMake was run.
-CMAKE_BINARY_DIR = /home/Howrun1/Cherry/CherrySystem/FieldDataProcessingServer/build
+CMAKE_BINARY_DIR = /home/Howrun1/FruitQualityMonitoringSystem/FieldDataProcessingServer/build
 
 #=============================================================================
 # Directory level rules for the build root directory
@@ -85,14 +85,14 @@ clean: CMakeFiles/FieldDataProcessingServer.dir/clean
 CMakeFiles/FieldDataProcessingServer.dir/all:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/FieldDataProcessingServer.dir/build.make CMakeFiles/FieldDataProcessingServer.dir/depend
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/FieldDataProcessingServer.dir/build.make CMakeFiles/FieldDataProcessingServer.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/home/Howrun1/Cherry/CherrySystem/FieldDataProcessingServer/build/CMakeFiles --progress-num=1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19 "Built target FieldDataProcessingServer"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/home/Howrun1/FruitQualityMonitoringSystem/FieldDataProcessingServer/build/CMakeFiles --progress-num=1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19 "Built target FieldDataProcessingServer"
 .PHONY : CMakeFiles/FieldDataProcessingServer.dir/all
 
 # Build rule for subdir invocation for target.
 CMakeFiles/FieldDataProcessingServer.dir/rule: cmake_check_build_system
-	$(CMAKE_COMMAND) -E cmake_progress_start /home/Howrun1/Cherry/CherrySystem/FieldDataProcessingServer/build/CMakeFiles 19
+	$(CMAKE_COMMAND) -E cmake_progress_start /home/Howrun1/FruitQualityMonitoringSystem/FieldDataProcessingServer/build/CMakeFiles 19
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 CMakeFiles/FieldDataProcessingServer.dir/all
-	$(CMAKE_COMMAND) -E cmake_progress_start /home/Howrun1/Cherry/CherrySystem/FieldDataProcessingServer/build/CMakeFiles 0
+	$(CMAKE_COMMAND) -E cmake_progress_start /home/Howrun1/FruitQualityMonitoringSystem/FieldDataProcessingServer/build/CMakeFiles 0
 .PHONY : CMakeFiles/FieldDataProcessingServer.dir/rule
 
 # Convenience name for target.
@@ -102,7 +102,7 @@ FieldDataProcessingServer: CMakeFiles/FieldDataProcessingServer.dir/rule
 # codegen rule for target.
 CMakeFiles/FieldDataProcessingServer.dir/codegen:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/FieldDataProcessingServer.dir/build.make CMakeFiles/FieldDataProcessingServer.dir/codegen
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/home/Howrun1/Cherry/CherrySystem/FieldDataProcessingServer/build/CMakeFiles --progress-num=1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19 "Finished codegen for target FieldDataProcessingServer"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/home/Howrun1/FruitQualityMonitoringSystem/FieldDataProcessingServer/build/CMakeFiles --progress-num=1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19 "Finished codegen for target FieldDataProcessingServer"
 .PHONY : CMakeFiles/FieldDataProcessingServer.dir/codegen
 
 # clean rule for target.

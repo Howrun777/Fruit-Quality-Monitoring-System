@@ -4,7 +4,7 @@
 # compile CXX with /usr/bin/c++
 CXX_DEFINES = 
 
-CXX_INCLUDES = -I/home/Howrun1/Cherry/CherrySystem/FieldDataProcessingServer/src -I/home/Howrun1/Cherry/CherrySystem/FieldDataProcessingServer/third_party/httplib -I/home/Howrun1/Cherry/CherrySystem/FieldDataProcessingServer/third_party/json -I/home/Howrun1/Cherry/CherrySystem/FieldDataProcessingServer/third_party/onnxruntime/onnxruntime-linux-x64-1.16.3/include -I/usr/include/mysql
+CXX_INCLUDES = -I/home/Howrun1/FruitQualityMonitoringSystem/FieldDataProcessingServer/src -I/home/Howrun1/FruitQualityMonitoringSystem/FieldDataProcessingServer/third_party/httplib -I/home/Howrun1/FruitQualityMonitoringSystem/FieldDataProcessingServer/third_party/json -I/home/Howrun1/FruitQualityMonitoringSystem/FieldDataProcessingServer/third_party/onnxruntime/onnxruntime-linux-x64-1.16.3/include -I/usr/include/mysql
 
 CXX_FLAGS = -std=gnu++17 -Wall -Wextra -Wpedantic
 

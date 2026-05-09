@@ -1,0 +1,3 @@
+/home/Howrun1/Cherry/CherrySystem/FieldDataProcessingServer/build/CMakeFiles/FieldDataProcessingServer.dir
+/home/Howrun1/Cherry/CherrySystem/FieldDataProcessingServer/build/CMakeFiles/edit_cache.dir
+/home/Howrun1/Cherry/CherrySystem/FieldDataProcessingServer/build/CMakeFiles/rebuild_cache.dir

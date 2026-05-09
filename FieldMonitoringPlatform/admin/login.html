@@ -1,0 +1,541 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>管理员登录 · 樱桃数据处理中心</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            /* 樱桃主题色 */
+            --cherry: #D93843;
+            --cherry-dark: #A31B24;
+            --cherry-deep: #6B0F15;
+            --cherry-light: #FDEEEF;
+            --cherry-mid: #ED6A73;
+            
+            /* 文字与背景 */
+            --text-primary: #2A1112;
+            --text-secondary: #6B4F50;
+            --text-muted: #AB9395;
+            --bg: #FCF8F8;
+            --bg-card: #FFFFFF;
+            
+            /* 边框与圆角 */
+            --border: rgba(217, 56, 67, 0.15);
+            --border-mid: rgba(217, 56, 67, 0.28);
+            --radius: 10px;
+            --radius-lg: 16px;
+            
+            /* 状态提示颜色 */
+            --red: #E24B4A;
+            --red-light: #FCEBEB;
+            --red-border: #F7C1C1;
+            
+            --success: #1D9E75;
+            --success-dark: #085041;
+            --success-light: #E1F5EE;
+            --success-border: rgba(29, 158, 117, 0.3);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'DM Sans', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+            background: var(--bg);
+            color: var(--text-primary);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* ─── TOP BAR ─── */
+        .topbar {
+            height: 52px;
+            background: var(--bg-card);
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            padding: 0 2rem;
+            justify-content: space-between;
+        }
+
+        .topbar-brand {
+            display: flex;
+            align-items: center;
+            gap: 9px;
+            text-decoration: none;
+            color: var(--text-primary);
+        }
+
+        .topbar-logo {
+            width: 28px;
+            height: 28px;
+            background: var(--cherry);
+            border-radius: 7px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .topbar-logo svg {
+            width: 16px;
+            height: 16px;
+        }
+
+        .topbar-name {
+            font-size: 13.5px;
+            font-weight: 500;
+        }
+
+        .topbar-back {
+            font-size: 12.5px;
+            color: var(--text-muted);
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            transition: color 0.15s;
+        }
+
+        .topbar-back:hover { color: var(--cherry); }
+
+        /* ─── LAYOUT ─── */
+        .page {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 3rem 1.5rem;
+        }
+
+        .login-wrap {
+            width: 100%;
+            max-width: 400px;
+            animation: fadeUp 0.4s ease both;
+        }
+
+        @keyframes fadeUp {
+            from { opacity: 0; transform: translateY(14px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* ─── BRAND HEADER ─── */
+        .brand-header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .brand-icon {
+            width: 52px;
+            height: 52px;
+            background: var(--cherry);
+            border-radius: 14px;
+            margin: 0 auto 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .brand-icon svg {
+            width: 28px;
+            height: 28px;
+        }
+
+        .brand-title {
+            font-size: 20px;
+            font-weight: 400;
+            letter-spacing: -0.03em;
+            color: var(--text-primary);
+            margin-bottom: 4px;
+        }
+
+        .brand-sub {
+            font-size: 12.5px;
+            color: var(--text-muted);
+            font-family: 'DM Mono', monospace;
+            letter-spacing: 0.03em;
+        }
+
+        /* ─── CARD ─── */
+        .login-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            padding: 2rem;
+        }
+
+        /* ─── ALERTS ─── */
+        .alert {
+            display: none;
+            align-items: flex-start;
+            gap: 10px;
+            padding: 11px 14px;
+            border-radius: 8px;
+            font-size: 13px;
+            margin-bottom: 1.25rem;
+            line-height: 1.5;
+        }
+
+        .alert.show { display: flex; }
+
+        .alert-error {
+            background: var(--red-light);
+            border: 1px solid var(--red-border);
+            color: #791F1F;
+        }
+
+        .alert-success {
+            background: var(--success-light);
+            border: 1px solid var(--success-border);
+            color: var(--success-dark);
+        }
+
+        .alert-icon {
+            width: 17px;
+            height: 17px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+            font-weight: 700;
+            flex-shrink: 0;
+            margin-top: 1px;
+        }
+
+        .alert-error .alert-icon { background: var(--red); color: #fff; }
+        .alert-success .alert-icon { background: var(--success); color: #fff; font-size: 11px; }
+
+        /* ─── FIELDS ─── */
+        .field {
+            margin-bottom: 1.25rem;
+        }
+
+        .field-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 6px;
+        }
+
+        .field label {
+            font-size: 11.5px;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            color: var(--text-secondary);
+        }
+
+        .forgot-link {
+            font-size: 12px;
+            color: var(--cherry);
+            text-decoration: none;
+            cursor: pointer;
+        }
+
+        .forgot-link:hover { text-decoration: underline; }
+
+        .input-wrap {
+            position: relative;
+        }
+
+        .input-wrap input {
+            width: 100%;
+            height: 40px;
+            background: #FFF9F9;
+            border: 1px solid var(--border-mid);
+            border-radius: 8px;
+            padding: 0 14px;
+            font-size: 14px;
+            color: var(--text-primary);
+            font-family: inherit;
+            outline: none;
+            transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
+        }
+
+        .input-wrap input:focus {
+            background: #fff;
+            border-color: var(--cherry);
+            box-shadow: 0 0 0 3px rgba(217, 56, 67, 0.12);
+        }
+
+        .input-wrap input.error {
+            border-color: var(--red);
+            box-shadow: 0 0 0 3px rgba(226, 75, 74, 0.1);
+        }
+
+        .input-wrap input::placeholder {
+            color: var(--text-muted);
+            font-size: 13px;
+        }
+
+        /* Password toggle */
+        .pw-toggle {
+            position: absolute;
+            right: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: var(--text-muted);
+            padding: 2px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: color 0.15s;
+        }
+
+        .pw-toggle:hover { color: var(--text-secondary); }
+
+        /* ─── HINT BOX (已删除原逻辑中的提示框，如果需要自行补充) ─── */
+        .hint-box {
+            background: #FFF5F6;
+            border: 1px solid rgba(217, 56, 67, 0.2);
+            border-left: 3px solid var(--cherry);
+            border-radius: 8px;
+            padding: 10px 14px;
+            font-size: 12.5px;
+            color: var(--text-secondary);
+            margin-bottom: 1.5rem;
+            line-height: 1.7;
+        }
+
+        .hint-box code {
+            font-family: 'DM Mono', monospace;
+            font-size: 12px;
+            color: var(--cherry-dark);
+            background: rgba(217, 56, 67, 0.1);
+            padding: 1px 6px;
+            border-radius: 3px;
+        }
+
+        /* ─── SUBMIT BTN ─── */
+        .btn-submit {
+            width: 100%;
+            height: 42px;
+            background: var(--cherry);
+            color: #fff;
+            border: none;
+            border-radius: 9px;
+            font-size: 14.5px;
+            font-weight: 500;
+            font-family: inherit;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            transition: background 0.2s, transform 0.1s;
+        }
+
+        .btn-submit:hover { background: var(--cherry-dark); }
+        .btn-submit:active { transform: scale(0.98); }
+        .btn-submit:disabled { background: var(--cherry-mid); cursor: not-allowed; transform: none; }
+
+        .spinner {
+            width: 15px;
+            height: 15px;
+            border: 2px solid rgba(255,255,255,0.3);
+            border-top-color: #fff;
+            border-radius: 50%;
+            animation: spin 0.65s linear infinite;
+        }
+
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* ─── DIVIDER ─── */
+        .divider {
+            height: 1px;
+            background: var(--border);
+            margin: 1.5rem 0;
+        }
+
+        /* ─── BACK LINK ─── */
+        .back-link {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            font-size: 13px;
+            color: var(--text-muted);
+            text-decoration: none;
+            cursor: pointer;
+            transition: color 0.15s;
+        }
+
+        .back-link:hover { color: var(--cherry); }
+
+        /* ─── FOOTER ─── */
+        .page-footer {
+            padding: 1.25rem;
+            text-align: center;
+            font-size: 11.5px;
+            color: var(--text-muted);
+        }
+    </style>
+</head>
+<body>
+
+<!-- ─── TOP BAR ─── -->
+<div class="topbar">
+    <a href="../index.html" class="topbar-brand">
+        <div class="topbar-logo">
+            <svg viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M9 2C9 2 6 5 6 9" stroke="white" stroke-width="1.4" stroke-linecap="round" fill="none"/>
+                <path d="M9 2C9 2 12 5 12 9" stroke="white" stroke-width="1.4" stroke-linecap="round" fill="none"/>
+                <circle cx="5.5" cy="11.5" r="3.5" fill="white" opacity="0.9"/>
+                <circle cx="12.5" cy="11.5" r="3.5" fill="white" opacity="0.9"/>
+                <path d="M10 2L11 3" stroke="white" stroke-width="1.4" stroke-linecap="round"/>
+            </svg>
+        </div>
+        <span class="topbar-name">SmartCherry</span>
+    </a>
+    <a href="../index.html" class="topbar-back">← 返回官网</a>
+</div>
+
+<!-- ─── PAGE ─── -->
+<div class="page">
+    <div class="login-wrap">
+
+        <!-- Brand Header -->
+        <div class="brand-header">
+            <div class="brand-icon">
+                <svg viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M9 2C9 2 6 5 6 9" stroke="white" stroke-width="1.2" stroke-linecap="round" fill="none"/>
+                    <path d="M9 2C9 2 12 5 12 9" stroke="white" stroke-width="1.2" stroke-linecap="round" fill="none"/>
+                    <circle cx="5.5" cy="11.5" r="3.5" fill="white" opacity="0.9"/>
+                    <circle cx="12.5" cy="11.5" r="3.5" fill="white" opacity="0.9"/>
+                    <path d="M10 2L11 3" stroke="white" stroke-width="1.2" stroke-linecap="round"/>
+                </svg>
+            </div>
+            <div class="brand-title">樱桃园数据处理中心</div>
+            <div class="brand-sub">CHERRY MONITORING PLATFORM</div>
+        </div>
+
+        <!-- Card -->
+        <div class="login-card">
+
+            <!-- Error Alert -->
+            <div id="alert-error" class="alert alert-error">
+                <span class="alert-icon">!</span>
+                <span>账号或密码错误，请重新输入</span>
+            </div>
+
+            <!-- Success Alert -->
+            <div id="alert-success" class="alert alert-success">
+                <span class="alert-icon">✓</span>
+                <span>登录成功，正在跳转至数据大屏…</span>
+            </div>
+
+            <!-- Username -->
+            <div class="field">
+                <label>账号 USERNAME</label>
+                <div class="input-wrap">
+                    <input type="text" id="username" 
+                           autocomplete="username" spellcheck="false"
+                           placeholder="请输入管理员账号">
+                </div>
+            </div>
+
+            <!-- Password -->
+            <div class="field">
+                <div class="field-header">
+                    <label>密码 PASSWORD</label>
+                    <a class="forgot-link" onclick="alert('请联系系统管理员重置密码\nhowrun777@outlook.com')">忘记密码？</a>
+                </div>
+                <div class="input-wrap">
+                    <input type="password" id="password" 
+                           autocomplete="current-password"
+                           placeholder="请输入登录密码"
+                           style="padding-right: 42px;">
+                    <button class="pw-toggle" id="pw-toggle" type="button" onclick="togglePw()" title="显示/隐藏密码">
+                        <svg id="eye-icon" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round">
+                            <path d="M1 8C3 4.5 13 4.5 15 8C13 11.5 3 11.5 1 8Z"/>
+                            <circle cx="8" cy="8" r="2"/>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Submit -->
+            <button class="btn-submit" id="login-btn" type="button" onclick="handleLogin()">
+                登 录
+            </button>
+
+            <div class="divider"></div>
+
+            <a class="back-link" href="../index.html">← 返回官网首页</a>
+        </div>
+
+    </div>
+</div>
+
+<!-- ─── FOOTER ─── -->
+<div class="page-footer">
+    © 2026 SmartCherrySystem · 毕业设计专属版权所有
+</div>
+
+<!-- ─── Scripts ─── -->
+<script src="js/api.js" onerror="console.warn('api.js 未找到，使用内置登录逻辑')"></script>
+
+<script>
+    /* ── 密码显隐切换 ── */
+    function togglePw() {
+        var inp = document.getElementById('password');
+        var icon = document.getElementById('eye-icon');
+        var isHidden = inp.type === 'password';
+        inp.type = isHidden ? 'text' : 'password';
+        icon.innerHTML = isHidden
+            ? '<line x1="2" y1="2" x2="14" y2="14"/><path d="M7 4.5C7.3 4.5 7.7 4.5 8 4.5C11 4.5 13.5 6.5 15 8C14 9.5 12.5 11 10.5 11.8"/><path d="M4.5 5.5C3 6.5 1.5 7.3 1 8C3 11.5 5.5 12 8 12"/>'
+            : '<path d="M1 8C3 4.5 13 4.5 15 8C13 11.5 3 11.5 1 8Z"/><circle cx="8" cy="8" r="2"/>';
+    }
+
+    /* ── 登录逻辑 ── */
+    function handleLogin() {
+        var user = document.getElementById('username').value.trim();
+        var pass = document.getElementById('password').value;
+        var btn  = document.getElementById('login-btn');
+        var errEl = document.getElementById('alert-error');
+        var sucEl = document.getElementById('alert-success');
+        var userInp = document.getElementById('username');
+        var passInp = document.getElementById('password');
+
+        // 重置状态
+        errEl.classList.remove('show');
+        sucEl.classList.remove('show');
+        userInp.classList.remove('error');
+        passInp.classList.remove('error');
+
+        // 简单前端验证
+        if (!user) { userInp.classList.add('error'); userInp.focus(); return; }
+        if (!pass) { passInp.classList.add('error'); passInp.focus(); return; }
+
+        // 如果 api.js 已加载且暴露了 login 函数，优先使用
+        if (typeof login === 'function') {
+            login(user, pass);
+            return;
+        }
+        var errEl = document.getElementById('alert-error');
+        errEl.querySelector('span:last-child').innerText = '核心网络脚本未加载，请强制刷新页面(Ctrl+F5)或检查服务器状态。';
+        errEl.classList.add('show');
+    }
+
+    /* ── 回车提交 ── */
+    document.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter') handleLogin();
+    });
+
+    /* ── 输入时清除错误状态 ── */
+    ['username', 'password'].forEach(function(id) {
+        document.getElementById(id).addEventListener('input', function() {
+            this.classList.remove('error');
+            document.getElementById('alert-error').classList.remove('show');
+        });
+    });
+</script>
+
+</body>
+</html>

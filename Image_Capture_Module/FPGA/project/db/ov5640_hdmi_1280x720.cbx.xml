@@ -1,0 +1,19 @@
+<?xml version="1.0" ?>
+<LOG_ROOT>
+	<PROJECT NAME="ov5640_hdmi_1280x720">
+		<CBX_INST_ENTRY INSTANCE_NAME="|image_capture_system|rtc_display_74hc595:rtc_display_74hc595_inst|lpm_divide:Div1" CBX_FILE_NAME="lpm_divide_0jm.tdf"/>
+		<CBX_INST_ENTRY INSTANCE_NAME="|image_capture_system|rtc_display_74hc595:rtc_display_74hc595_inst|lpm_divide:Mod0" CBX_FILE_NAME="lpm_divide_ncm.tdf"/>
+		<CBX_INST_ENTRY INSTANCE_NAME="|image_capture_system|rtc_display_74hc595:rtc_display_74hc595_inst|lpm_divide:Mod4" CBX_FILE_NAME="lpm_divide_k9m.tdf"/>
+		<CBX_INST_ENTRY INSTANCE_NAME="|image_capture_system|clk_gen:clk_gen_inst|altpll:altpll_component" CBX_FILE_NAME="clk_gen_altpll.v"/>
+		<CBX_INST_ENTRY INSTANCE_NAME="|image_capture_system|clk_hdmi:clk_hdmi_inst|altpll:altpll_component" CBX_FILE_NAME="clk_hdmi_altpll.v"/>
+		<CBX_INST_ENTRY INSTANCE_NAME="|image_capture_system|rtc_display_74hc595:rtc_display_74hc595_inst|lpm_divide:Div2" CBX_FILE_NAME="lpm_divide_hhm.tdf"/>
+		<CBX_INST_ENTRY INSTANCE_NAME="|image_capture_system|rtc_display_74hc595:rtc_display_74hc595_inst|lpm_divide:Mod1" CBX_FILE_NAME="lpm_divide_icm.tdf"/>
+		<CBX_INST_ENTRY INSTANCE_NAME="|image_capture_system|rtc_display_74hc595:rtc_display_74hc595_inst|lpm_divide:Mod5" CBX_FILE_NAME="lpm_divide_k9m.tdf"/>
+		<CBX_INST_ENTRY INSTANCE_NAME="|image_capture_system|rtc_display_74hc595:rtc_display_74hc595_inst|lpm_divide:Div3" CBX_FILE_NAME="lpm_divide_hhm.tdf"/>
+		<CBX_INST_ENTRY INSTANCE_NAME="|image_capture_system|rtc_display_74hc595:rtc_display_74hc595_inst|lpm_divide:Mod2" CBX_FILE_NAME="lpm_divide_5bm.tdf"/>
+		<CBX_INST_ENTRY INSTANCE_NAME="|image_capture_system|altsyncram:spi_fifo_mem_rtl_0" CBX_FILE_NAME="altsyncram_qnb1.tdf"/>
+		<CBX_INST_ENTRY INSTANCE_NAME="|image_capture_system|rtc_display_74hc595:rtc_display_74hc595_inst|lpm_divide:Div0" CBX_FILE_NAME="lpm_divide_fkm.tdf"/>
+		<CBX_INST_ENTRY INSTANCE_NAME="|image_capture_system|rtc_display_74hc595:rtc_display_74hc595_inst|lpm_divide:Div4" CBX_FILE_NAME="lpm_divide_hhm.tdf"/>
+		<CBX_INST_ENTRY INSTANCE_NAME="|image_capture_system|rtc_display_74hc595:rtc_display_74hc595_inst|lpm_divide:Mod3" CBX_FILE_NAME="lpm_divide_k9m.tdf"/>
+	</PROJECT>
+</LOG_ROOT>

@@ -1,0 +1,38 @@
+# ONNX 模型文件
+*.onnx
+
+# 模型目录（包含 ONNX 文件）
+models/*.onnx
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+.venv/
+
+# 训练框架输出
+runs/
+export_models/
+*.pth
+*.pt
+
+# Jupyter
+.ipynb_checkpoints/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+*.swp
+*.swo
+*~
+
+# Logs
+*.log
+server.log

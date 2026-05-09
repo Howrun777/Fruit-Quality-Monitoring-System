@@ -54,7 +54,7 @@ flowchart LR
         end
 
         subgraph FPGA模块["FPGA 模块 (野火征途 Pro)"]
-            F0["UART 接收触发指令<br/>CAM device_id token ts<br/>GPIO 26 115200bps"]
+            F0["UART 接收触发指令<br/>CAM device_id token ts<br/>GPIO 5 9600bps"]
             F1["OV5640 摄像头<br/>DVP 640x480 JPEG"]
             F2["片外 SDRAM 缓存"]
             F3["SPI Master<br/>发送图像数据"]
@@ -72,7 +72,7 @@ flowchart LR
     E1 --> E6
     E0 --> E7
     F1 --> F2 --> F3
-    E4 -.->|"UART TX GPIO26<br/>触发命令"| F0
+    E4 -.->|"UART TX GPIO5<br/>触发命令"| F0
     F3 -->|"SPI"| S0
     S0 --> S1
 
@@ -1054,24 +1054,16 @@ spoilage = spoil_score × 100.0
 
 | 功能 | ESP32 引脚 | 说明 |
 |------|-----------|------|
-| TFT_MISO | GPIO19 | SPI 主机输入 |
-| TFT_MOSI | GPIO23 | SPI 主机输出 |
-| TFT_SCLK | GPIO18 | SPI 时钟 |
-| TFT_CS | GPIO5 | TFT 片选 |
-| TFT_DC | GPIO21 | 数据/命令选择 |
-| TFT_RST | GPIO4 | 复位 |
-| TFT_BL | — | 背光控制（代码中为宏，已在 tft 初始化时配置） |
-| TOUCH_MISO | GPIO39 | 触摸 SPI MISO |
+| I2C SDA | GPIO27 | I2C 数据线 |
+| I2C SCL | GPIO22 | I2C 时钟线 |
 | TOUCH_MOSI | GPIO32 | 触摸 SPI MOSI |
+| TOUCH_MISO | GPIO39 | 触摸 SPI MISO |
 | TOUCH_CLK | GPIO25 | 触摸 SPI 时钟 |
 | TOUCH_CS | GPIO33 | 触摸芯片片选 |
 | TOUCH_IRQ | GPIO36 | 触摸中断 |
-| SDA | GPIO27 | I2C 数据线 |
-| SCL | GPIO22 | I2C 时钟线 |
-| BUZZER | GPIO26 | 蜂鸣器控制（已禁用，当前用于 FPGA 通信） |
-| FPGA_UART_TX | GPIO26 | FPGA 触发命令发送 (Serial1 TX，115200bps) |
+| FPGA_UART_TX | GPIO5 | FPGA 触发命令发送 (Serial1，9600bps) |
 | GAS_RX | GPIO35 | Arduino 串口接收 |
-| GAS_TX | GPIO21 | Arduino 串口发送 |
+| BUZZER | GPIO26 | 已禁用（GPIO5 用于 FPGA 通信） |
 
 ### 7.2 I2C 总线接线（SDA=GPIO27，SCL=GPIO22，所有 I2C 设备共用）
 
@@ -1082,17 +1074,18 @@ spoilage = spoil_score × 100.0
 | AS7341 光谱传感器 | ESP32 3.3V | ESP32 GND | GPIO27 | GPIO22 | VIN→3.3V，INT 空置 |
 | DS3231 RTC 模块 | ESP32 3.3V | ESP32 GND | GPIO27 | GPIO22 | — |
 
-### 7.3 SPI 总线接线（TFT + 触摸共用 HSPI 总线）
+### 7.3 触摸屏幕配置
 
-| TFT ILI9341 | ESP32 | XPT2046 触摸 | ESP32 |
-|-------------|-------|-------------|-------|
-| CLK | GPIO18 | CLK | GPIO25 |
-| MOSI | GPIO23 | MOSI | GPIO32 |
-| MISO | GPIO19 | MISO | GPIO39 |
-| CS | GPIO5 | CS | GPIO33 |
-| DC | GPIO21 | — | — |
-| RST | GPIO4 | — | — |
-| BL | — | IRQ | GPIO36 |
+本系统使用独立的触摸屏模块，不复用主控 ESP32 的 SPI 总线。
+
+触摸芯片 XPT2046 通过独立 SPI 总线连接至 ESP32：
+| 功能 | ESP32 引脚 |
+|------|-----------|
+| TOUCH_MOSI | GPIO32 |
+| TOUCH_MISO | GPIO39 |
+| TOUCH_CLK | GPIO25 |
+| TOUCH_CS | GPIO33 |
+| TOUCH_IRQ | GPIO36 |
 
 ### 7.4 传感器详细参数
 
@@ -1376,13 +1369,41 @@ pio run --target monitor         # 打开串口监视器（115200 baud）
 **配置修改**（`config.h`）：
 
 ```cpp
-#define DEVICE_ID       "1001-01-01"
-#define FRUIT_VARIETY   "Cherry"
-#define DEVICE_TOKEN    "device-token-001"
-#define WIFI_SSID       "YourSSID"
-#define WIFI_PASS       "YourPassword"
-#define SERVER_URL      "http://47.107.41.102:9000/api/device/upload"
-#define AUTO_UPLOAD_INTERVAL 300000  // 5分钟
+// ======= 设备与网络配置 =======
+#define DEVICE_ID "1001-01-01"
+#define FRUIT_VARIETY "Cherry" // 水果品种
+#define DEVICE_TOKEN "device-token-001"
+
+#define WIFI_SSID "Howrun777"
+#define WIFI_PASS "28983904"
+#define SERVER_URL "http://47.107.41.102:9000/api/device/upload"
+
+// ======= I2C 传感器总线引脚 =======
+#define I2C_SDA_PIN 27
+#define I2C_SCL_PIN 22
+
+// ======= 独立触摸屏 SPI 总线引脚 =======
+#define TOUCH_MOSI_PIN 32
+#define TOUCH_MISO_PIN 39
+#define TOUCH_CLK_PIN  25
+#define TOUCH_CS_PIN   33
+#define TOUCH_IRQ_PIN  36
+
+// ======= 主控 → FPGA 通信引脚 =======
+#define FPGA_UART_TX_PIN 5
+#define FPGA_UART_BAUD 9600
+
+// ======= 蜂鸣器引脚（已禁用） =======
+#define BUZZER_PIN -1 // 已禁用，GPIO 26 用于 FPGA 通信
+
+// ======= 外部气体传感器模块 (Arduino) 串口通信引脚 =======
+#define GAS_RX_PIN 35
+#define GAS_TX_PIN -1 // 不需要 TX，因为 ESP32 只是接收数据
+#define GAS_BAUD_RATE 9600
+
+// ======= 业务定时配置 =======
+#define ENV_UPDATE_INTERVAL 2000    // UI环境数据刷新频率: 2秒
+#define AUTO_UPLOAD_INTERVAL 300000 // 自动检测上传频率: 5分钟 (300000毫秒)
 ```
 
 ### 11.2 后端服务器部署

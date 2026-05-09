@@ -443,7 +443,7 @@ print(f"Input: {input_name}, Output: {output_name}")
 | **数码管(595)** | `oe` | PIN_L11 | 2.5V |
 | **数码管(595)** | `shcp` | PIN_B1 | 2.5V |
 | **数码管(595)** | `stcp` | PIN_K9 | 2.5V |
-| **SPI 通信** | `spi_sck` | PIN_A10 | 2.5V |
+| **SPI 通信** | `spi_sck` | PIN_B1 | 2.5V |
 | **SPI 通信** | `spi_mosi` | PIN_B10 | 2.5V |
 | **SPI 通信** | `spi_miso` | PIN_A9 | 2.5V |
 | **SPI 通信** | `spi_cs_n` | PIN_B9 | 2.5V |
@@ -478,7 +478,7 @@ print(f"Input: {input_name}, Output: {output_name}")
 
 | 功能 | FPGA 侧 | ESP32-C3 侧 |
 |------|---------|-------------|
-| SPI 时钟 | PIN_A10 | GPIO2 (HSPI SCK) |
+| SPI 时钟 | PIN_B1 | GPIO2 (HSPI SCK) |
 | SPI MOSI | PIN_B10 | GPIO3 (HSPI MOSI) |
 | SPI MISO | PIN_A9 | GPIO10 (HSPI MISO) |
 | SPI 片选 | PIN_B9 | GPIO6 (HSPI CS) |

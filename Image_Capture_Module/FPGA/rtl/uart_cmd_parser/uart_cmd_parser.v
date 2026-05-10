@@ -7,13 +7,13 @@ module uart_cmd_parser (
     
     output reg         cmd_start,          
     output reg         cmd_valid,          
-    output reg  [31:0] device_id,          
-    output reg  [63:0] token,              
+    output reg  [255:0] device_id,          
+    output reg  [255:0] token,              
     output reg  [31:0] timestamp,          
     output reg         cmd_error           
 );
 
-localparam ID_MAX_LEN = 32, TOKEN_MAX_LEN = 64, TIME_LEN = 10;  
+localparam ID_MAX_LEN = 32, TOKEN_MAX_LEN = 32, TIME_LEN = 10;  
 localparam ASCII_C = 8'h43, ASCII_A = 8'h41, ASCII_M = 8'h4D;
 localparam ASCII_BAR = 8'h7C;
 localparam ASCII_0 = 8'h30, ASCII_9 = 8'h39;
@@ -24,8 +24,8 @@ localparam EXTRACT_ID=4, EXTRACT_TOKEN=5, EXTRACT_TIME=6, DONE=7, ERROR=8;
 wire rx_done; wire [7:0] rx_data;
 reg [3:0] state, state_next;
 reg [5:0] id_cnt, token_cnt, time_cnt;
-reg [7:0] id_buffer [0:3];     
-reg [7:0] token_buffer [0:7];  
+reg [7:0] id_buffer [0:31];     
+reg [7:0] token_buffer [0:31];  
 reg [31:0] temp_timestamp;      
 
 uart_rx #(
@@ -92,8 +92,8 @@ integer i;
 always @(posedge sys_clk or negedge sys_rst_n) begin
     if (!sys_rst_n) begin
         id_cnt <= 0; token_cnt <= 0; time_cnt <= 0; temp_timestamp <= 0;
-        for (i=0; i<4; i=i+1) id_buffer[i] <= 0;
-        for (i=0; i<8; i=i+1) token_buffer[i] <= 0;
+        for (i=0; i<32; i=i+1) id_buffer[i] <= 8'h20;
+        for (i=0; i<32; i=i+1) token_buffer[i] <= 8'h20;
         cmd_start <= 0;
     end else begin
         cmd_start <= 0; 
@@ -101,13 +101,15 @@ always @(posedge sys_clk or negedge sys_rst_n) begin
         
         if (state == IDLE) begin
             id_cnt <= 0; token_cnt <= 0; time_cnt <= 0; temp_timestamp <= 0; 
+            for (i=0; i<32; i=i+1) id_buffer[i] <= 8'h20;
+            for (i=0; i<32; i=i+1) token_buffer[i] <= 8'h20;
         end else if (rx_done) begin
             if (state == EXTRACT_ID && rx_data != ASCII_BAR && id_cnt < ID_MAX_LEN) begin
-                if (id_cnt < 4) id_buffer[id_cnt] <= rx_data;
+                id_buffer[id_cnt] <= rx_data;
                 id_cnt <= id_cnt + 1;
             end
             else if (state == EXTRACT_TOKEN && rx_data != ASCII_BAR && token_cnt < TOKEN_MAX_LEN) begin
-                if (token_cnt < 8) token_buffer[token_cnt] <= rx_data;
+                token_buffer[token_cnt] <= rx_data;
                 token_cnt <= token_cnt + 1;
             end
             // 收到数字就进行移位累加
@@ -129,9 +131,22 @@ always @(posedge sys_clk or negedge sys_rst_n) begin
             cmd_valid <= 1;  
             // 对于短数字(60)或满长数字(1777818165)，这套机制保证 temp_timestamp 都是准的！
             timestamp <= temp_timestamp; 
-            device_id <= {id_buffer[0], id_buffer[1], id_buffer[2], id_buffer[3]};
-            token <= {token_buffer[0], token_buffer[1], token_buffer[2], token_buffer[3], 
-                      token_buffer[4], token_buffer[5], token_buffer[6], token_buffer[7]};
+            device_id <= {id_buffer[0], id_buffer[1], id_buffer[2], id_buffer[3],
+                          id_buffer[4], id_buffer[5], id_buffer[6], id_buffer[7],
+                          id_buffer[8], id_buffer[9], id_buffer[10], id_buffer[11],
+                          id_buffer[12], id_buffer[13], id_buffer[14], id_buffer[15],
+                          id_buffer[16], id_buffer[17], id_buffer[18], id_buffer[19],
+                          id_buffer[20], id_buffer[21], id_buffer[22], id_buffer[23],
+                          id_buffer[24], id_buffer[25], id_buffer[26], id_buffer[27],
+                          id_buffer[28], id_buffer[29], id_buffer[30], id_buffer[31]};
+            token <= {token_buffer[0], token_buffer[1], token_buffer[2], token_buffer[3],
+                      token_buffer[4], token_buffer[5], token_buffer[6], token_buffer[7],
+                      token_buffer[8], token_buffer[9], token_buffer[10], token_buffer[11],
+                      token_buffer[12], token_buffer[13], token_buffer[14], token_buffer[15],
+                      token_buffer[16], token_buffer[17], token_buffer[18], token_buffer[19],
+                      token_buffer[20], token_buffer[21], token_buffer[22], token_buffer[23],
+                      token_buffer[24], token_buffer[25], token_buffer[26], token_buffer[27],
+                      token_buffer[28], token_buffer[29], token_buffer[30], token_buffer[31]};
         end else if (state == ERROR) begin
             cmd_error <= 1;
         end

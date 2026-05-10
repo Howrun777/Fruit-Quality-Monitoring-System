@@ -22,7 +22,7 @@
 #define SPI_MODE 3             
 #define SPI_FREQUENCY 10000000 
 #define SPI_BIT_ORDER MSBFIRST
-#define SPI_RX_BUFFER_SIZE 4096 
+#define SPI_RX_BUFFER_SIZE (100 * 1024 + 512)
 
 // ============================================================
 // Protocol Configuration (🌟 已适配最终定长规范)

@@ -189,11 +189,10 @@ static void spi_data_task(void* pvParameters) {
         if (spi_slave_data_available()) {
             size_t len = spi_slave_get_received_len();
             if (len > 0) {
-                uint8_t temp_buffer[SPI_RX_BUFFER_SIZE];
-                size_t read_len = spi_slave_read(temp_buffer, sizeof(temp_buffer));
+                size_t read_len = spi_slave_read(s_rx_buffer, RX_BUFFER_SIZE);
                 
                 if (read_len > 0) {
-                    uint8_t state = protocol_parser_feed(&s_parser, temp_buffer, read_len);
+                    uint8_t state = protocol_parser_feed(&s_parser, s_rx_buffer, read_len);
                     if (protocol_parser_is_complete(&s_parser)) {
                         digitalWrite(LED_PIN, HIGH);
                         xSemaphoreGive(s_data_ready_semaphore);

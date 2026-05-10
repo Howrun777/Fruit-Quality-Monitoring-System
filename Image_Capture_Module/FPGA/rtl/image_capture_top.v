@@ -60,8 +60,8 @@ clk_gen u_pll (
 // 2. 串口命令解析与反馈
 //====================================================================//
 wire        cmd_start, cmd_valid;
-wire [31:0] device_id;
-wire [63:0] token;
+wire [255:0] device_id;
+wire [255:0] token;
 wire [31:0] timestamp;
 
 uart_cmd_parser u_parser (

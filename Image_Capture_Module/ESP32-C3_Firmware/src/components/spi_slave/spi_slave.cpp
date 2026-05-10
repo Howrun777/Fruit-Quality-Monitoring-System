@@ -28,18 +28,18 @@ static spi_slave_status_t s_last_status = SPI_SLAVE_OK;
 
 // Receive buffer (ping-pong for DMA)
 static uint8_t s_rx_buffer_0[SPI_RX_BUFFER_SIZE] __attribute__((aligned(4)));
-static uint8_t s_rx_buffer_1[SPI_RX_BUFFER_SIZE] __attribute__((aligned(4)));
 static uint8_t* s_current_rx_buffer = s_rx_buffer_0;
-static uint8_t* s_processing_buffer = s_rx_buffer_1;
+static uint8_t* s_processing_buffer = s_rx_buffer_0;
 static size_t s_received_len = 0;
 static volatile bool s_data_ready = false;
+static spi_slave_transaction_t s_transaction = {};
 
 // ============================================================
 // Static Function Declarations
 // ============================================================
 
 static void IRAM_ATTR spi_slave_transaction_cb(spi_slave_transaction_t* trans);
-static void swap_buffers(void);
+static bool queue_receive_transaction(void);
 
 // ============================================================
 // Public Functions
@@ -143,6 +143,13 @@ bool spi_slave_start(void)
 
     s_running = true;
     s_last_status = SPI_SLAVE_OK;
+
+    if (!queue_receive_transaction()) {
+        s_running = false;
+        s_last_status = SPI_SLAVE_ERROR;
+        return false;
+    }
+
     ESP_LOGI(TAG, "SPI slave started, waiting for data...");
 
     return true;
@@ -176,9 +183,12 @@ size_t spi_slave_read(uint8_t* buf, size_t len)
 
     size_t copy_len = (len < s_received_len) ? len : s_received_len;
     memcpy(buf, s_processing_buffer, copy_len);
+    spi_slave_transaction_t* completed_transaction = nullptr;
+    spi_slave_get_trans_result(SPI_HOST_ID, &completed_transaction, 0);
     
     // Clear ready flag after reading
     s_data_ready = false;
+    queue_receive_transaction();
     
     return copy_len;
 }
@@ -188,7 +198,6 @@ void spi_slave_clear_buffer(void)
     s_data_ready = false;
     s_received_len = 0;
     memset(s_rx_buffer_0, 0, SPI_RX_BUFFER_SIZE);
-    memset(s_rx_buffer_1, 0, SPI_RX_BUFFER_SIZE);
 }
 
 spi_slave_status_t spi_slave_get_status(void)
@@ -219,10 +228,8 @@ static void IRAM_ATTR spi_slave_transaction_cb(spi_slave_transaction_t* trans)
     size_t received_bytes = trans->trans_len / 8;
     
     if (received_bytes > 0 && received_bytes <= SPI_RX_BUFFER_SIZE) {
-        // Swap buffers
-        swap_buffers();
-        
         // Update received data info
+        s_processing_buffer = (uint8_t*)trans->rx_buffer;
         s_received_len = received_bytes;
         s_data_ready = true;
         s_last_status = SPI_SLAVE_OK;
@@ -231,9 +238,23 @@ static void IRAM_ATTR spi_slave_transaction_cb(spi_slave_transaction_t* trans)
     }
 }
 
-static void swap_buffers(void)
+static bool queue_receive_transaction(void)
 {
-    uint8_t* temp = s_processing_buffer;
-    s_processing_buffer = s_current_rx_buffer;
-    s_current_rx_buffer = temp;
+    if (!s_running || s_data_ready) {
+        return false;
+    }
+
+    memset(&s_transaction, 0, sizeof(s_transaction));
+    memset(s_current_rx_buffer, 0, SPI_RX_BUFFER_SIZE);
+    s_transaction.length = SPI_RX_BUFFER_SIZE * 8;
+    s_transaction.rx_buffer = s_current_rx_buffer;
+
+    esp_err_t ret = spi_slave_queue_trans(SPI_HOST_ID, &s_transaction, portMAX_DELAY);
+    if (ret != ESP_OK) {
+        s_last_status = SPI_SLAVE_ERROR;
+        ESP_LOGE(TAG, "Failed to queue SPI transaction: %s", esp_err_to_name(ret));
+        return false;
+    }
+
+    return true;
 }

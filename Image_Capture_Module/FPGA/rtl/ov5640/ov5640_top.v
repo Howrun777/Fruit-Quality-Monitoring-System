@@ -3,7 +3,7 @@
 // Author        : EmbedFire
 // Create Date   : 2019/11/01
 // Module Name   : ov5640_top
-// Project Name  : ov5640_vga_640x480
+// Project Name  : ov5640_hdmi_1280x720
 // Target Devices: Altera EP4CE10F17C8N
 // Tool Versions : Quartus 13.0
 // Description   : 摄像头顶层模块

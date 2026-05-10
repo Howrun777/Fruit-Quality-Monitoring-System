@@ -1,84 +1,63 @@
-`timescale  1ns/1ns
+`timescale 1ns/1ns
+
 module ov5640_jpeg_capture (
-    input  wire        sys_clk,
-    input  wire        sys_rst_n,
-    input  wire        capture_req,
-    
-    // 摄像头引脚
-    input  wire        ov5640_pclk,
-    input  wire        ov5640_href,
-    input  wire        ov5640_vsync,
+    input  wire        sys_clk, sys_rst_n, capture_req,
+    input  wire        ov5640_pclk, ov5640_href, ov5640_vsync,
     input  wire [7:0]  ov5640_data,
-    output wire        sccb_scl,
-    inout  wire        sccb_sda,
-    output wire        cfg_done,
-
-    // SDRAM 引脚
-    input  wire        clk_100m,
-    input  wire        clk_100m_shift,
-    output wire        sdram_clk, sdram_cke, sdram_cs_n, sdram_ras_n, sdram_cas_n, sdram_we_n,
-    output wire [1:0]  sdram_ba, sdram_dqm,
-    output wire [12:0] sdram_addr,
-    inout  wire [15:0] sdram_dq,
-    output wire        sdram_init_done,
-
-    // 用户输出
-    input  wire        rd_en,
-    output wire [15:0] rd_data,
-    output wire [9:0]  rd_fifo_num,
+    output wire        sccb_scl, inout wire sccb_sda,
+    
+    output reg  [7:0]  jpeg_data,
+    output reg         jpeg_data_en,
     output reg  [31:0] jpeg_size,
     output reg         capture_done
 );
 
-wire wr_en_raw;
-wire [15:0] wr_data_raw;
+// [此处请保留你的 I2C/SCCB 初始化逻辑]
 
-// 1. 摄像头配置 (使用 25MHz 时钟保证 I2C 稳定)
-ov5640_top u_ov5640_cfg (
-    .sys_clk(sys_clk), .sys_rst_n(sys_rst_n), .sys_init_done(sdram_init_done),
-    .ov5640_pclk(ov5640_pclk), .ov5640_href(ov5640_href), .ov5640_vsync(ov5640_vsync), .ov5640_data(ov5640_data),
-    .cfg_done(cfg_done), .sccb_scl(sccb_scl), .sccb_sda(sccb_sda),
-    .ov5640_wr_en(wr_en_raw), .ov5640_data_out(wr_data_raw)
-);
+// JPEG 截取 FSM (pclk 时钟域)
+reg [1:0] cap_state;
+reg req_sync1, req_sync2;
+always @(posedge ov5640_pclk) begin req_sync1 <= capture_req; req_sync2 <= req_sync1; end
 
-// 2. JPEG 捕获控制器 (处理 capture_req，只抓取一帧)
-reg capturing;
+reg [7:0] data_d1; reg href_d1;
+reg [31:0] byte_cnt; reg wait_d9;
+
 always @(posedge ov5640_pclk or negedge sys_rst_n) begin
-    if(!sys_rst_n) begin 
-        capturing <= 0; jpeg_size <= 0; capture_done <= 0;
+    if (!sys_rst_n) begin
+        cap_state <= 0; jpeg_data <= 0; jpeg_data_en <= 0; 
+        jpeg_size <= 0; capture_done <= 0; byte_cnt <= 0;
     end else begin
-        capture_done <= 0;
-        if (capture_req && !capturing) begin
-            capturing <= 1; jpeg_size <= 0;
-        end else if (capturing && wr_en_raw) begin
-            // 正常自增，记录真实图像大小
-            jpeg_size <= jpeg_size + 2; 
-        end
-        // 遇到下一帧同步信号停止捕获
-        if (capturing && ov5640_vsync) begin
-            capturing <= 0; capture_done <= 1;
-        end
+        capture_done <= 0; jpeg_data_en <= 0;
+        data_d1 <= ov5640_data; href_d1 <= ov5640_href;
+        
+        case (cap_state)
+            0: if (req_sync2) cap_state <= 1; // 收到请求，准备抓图
+            1: begin // 找 FF D8
+                if (href_d1 && data_d1 == 8'hFF && ov5640_data == 8'hD8) begin
+                    jpeg_data <= 8'hFF; jpeg_data_en <= 1;
+                    byte_cnt <= 1; cap_state <= 2;
+                end
+            end
+            2: begin // 存图中，找 FF D9
+                if (href_d1) begin
+                    if (data_d1 == 8'hFF && ov5640_data == 8'hD9) begin
+                        jpeg_data <= 8'hFF; jpeg_data_en <= 1;
+                        byte_cnt <= byte_cnt + 1; wait_d9 <= 1;
+                        cap_state <= 3;
+                    end else begin
+                        jpeg_data <= data_d1; jpeg_data_en <= 1;
+                        byte_cnt <= byte_cnt + 1;
+                    end
+                end
+            end
+            3: begin // 写入最后一个 D9 并结束
+                if (wait_d9) begin
+                    jpeg_data <= 8'hD9; jpeg_data_en <= 1;
+                    jpeg_size <= byte_cnt + 1; wait_d9 <= 0;
+                    capture_done <= 1; cap_state <= 0;
+                end
+            end
+        endcase
     end
 end
-
-wire wr_en = capturing ? wr_en_raw : 1'b0;
-wire [15:0] wr_data = wr_data_raw;
-
-// 3. SDRAM 存储 (利用 capture_req 作为复位信号清空 FIFO 和地址)
-sdram_top u_sdram (
-    .sys_clk(clk_100m), .clk_out(clk_100m_shift), .sys_rst_n(sys_rst_n),
-    .wr_fifo_wr_clk(ov5640_pclk), .wr_fifo_wr_req(wr_en), .wr_fifo_wr_data(wr_data),
-    .sdram_wr_b_addr(24'd0), .sdram_wr_e_addr(24'd1200000), .wr_burst_len(10'd512),
-    .wr_rst(capture_req), 
-    
-    .rd_fifo_rd_clk(sys_clk), .rd_fifo_rd_req(rd_en), .rd_fifo_rd_data(rd_data),
-    .rd_fifo_num(rd_fifo_num), .sdram_rd_b_addr(24'd0), .sdram_rd_e_addr(24'd1200000), .rd_burst_len(10'd512),
-    .rd_rst(capture_req),
-    
-    .read_valid(1'b1), .pingpang_en(1'b0), .init_end(sdram_init_done),
-    .sdram_clk(sdram_clk), .sdram_cke(sdram_cke), .sdram_cs_n(sdram_cs_n),
-    .sdram_ras_n(sdram_ras_n), .sdram_cas_n(sdram_cas_n), .sdram_we_n(sdram_we_n),
-    .sdram_ba(sdram_ba), .sdram_addr(sdram_addr), .sdram_dq(sdram_dq), .sdram_dqm(sdram_dqm)
-);
-
 endmodule

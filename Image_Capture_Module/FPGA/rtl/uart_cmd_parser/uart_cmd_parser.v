@@ -28,7 +28,10 @@ reg [7:0] id_buffer [0:3];
 reg [7:0] token_buffer [0:7];  
 reg [31:0] temp_timestamp;      
 
-uart_rx uart_rx_inst (
+uart_rx #(
+    .CLK_FREQ(50_000_000),
+    .UART_BAUD(9600)
+) uart_rx_inst (
     .sys_clk(sys_clk), .sys_rst_n(sys_rst_n),
     .uart_rx(uart_rx), .rx_done(rx_done), .rx_data(rx_data)
 );

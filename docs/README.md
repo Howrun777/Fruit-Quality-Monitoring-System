@@ -263,7 +263,7 @@ flowchart LR
     DS3231 --> E
     OLED --> A
     E --> TFT
-    E -->|"UART TX GPIO26\n触发命令| CAM...| FPGA
+    E -->|"UART TX GPIO5\n触发命令| CAM...| FPGA
     OV5640 -->|"DVP 640x480 JPEG"| FPGA
     FPGA -->|"SPI Master"| F
     F -->|"WiFi| 云端["云端 服务层"]
@@ -1012,8 +1012,8 @@ spoilage = spoil_score × 100.0
 | 5 | RTC 时钟 | DS3231 | 1 | I2C，断电保持 |
 | 6 | 显示屏 | 2.8 寸 ILI9341 SPI TFT | 1 | 分辨率 240×320，SPI 接口 |
 | 7 | 触摸芯片 | XPT2046 | 1 | SPI 触摸驱动 |
-| 8 | 蜂鸣器 | 5V 两针无源蜂鸣器 | 1 | GPIO26 控制（**已禁用，当前用于 FPGA 通信**） |
-| 9 | FPGA 通信串口 | ESP32 Serial1 | 1 | GPIO26(TX) 115200bps，向 FPGA 发送触发命令 |
+| 8 | 蜂鸣器 | 5V 两针无源蜂鸣器 | 1 | GPIO26 控制（**已禁用，当前 FPGA 通信改用 GPIO5**） |
+| 9 | FPGA 通信串口 | ESP32 Serial1 | 1 | GPIO5(TX) 9600bps，向 FPGA 发送触发命令 |
 | 10 | 气体通信串口 | ESP32 Serial2 | 1 | GPIO35(RX)/GPIO21(TX)，9600bps |
 | 10 | 杜邦线、面包板 | — | 若干 | 原型搭建 |
 
@@ -1394,7 +1394,7 @@ pio run --target monitor         # 打开串口监视器（115200 baud）
 #define FPGA_UART_BAUD 9600
 
 // ======= 蜂鸣器引脚（已禁用） =======
-#define BUZZER_PIN -1 // 已禁用，GPIO 26 用于 FPGA 通信
+#define BUZZER_PIN -1 // 已禁用，GPIO 5 用于 FPGA 通信
 
 // ======= 外部气体传感器模块 (Arduino) 串口通信引脚 =======
 #define GAS_RX_PIN 35

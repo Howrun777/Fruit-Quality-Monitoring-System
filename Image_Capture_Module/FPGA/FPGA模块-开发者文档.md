@@ -31,7 +31,7 @@ flowchart TB
         A[主业务<br/>光谱+环境检测]
     end
 
-    A -->|UART TX<br/>GPIO 26| B
+    A -->|UART TX<br/>GPIO 5| B
 
     subgraph FPGA模块["FPGA (野火征途 Pro)"]
         B2[接收触发命令]
@@ -71,14 +71,14 @@ OV5640 原始 640×480 JPEG → stb_image 解码 → Center Crop 480×480 → Re
 
 ### 2.1 主控 ESP32 与 FPGA 的 UART 通信
 
-> **重要**：主控 ESP32 仅使用 **GPIO 26** 作为 UART TX 向 FPGA 发送触发命令，无需 RX。
+> **重要**：主控 ESP32 仅使用 **GPIO 5** 作为 UART TX 向 FPGA 发送触发命令，无需 RX。
 
 | 属性 | 值 |
 |------|-----|
 | 信号 | UART_TX |
-| 主控 ESP32 引脚 | GPIO 26 |
+| 主控 ESP32 引脚 | GPIO 5 |
 | FPGA 引脚 | PIN_N6 |
-| 波特率 | 115200bps |
+| 波特率 | 9600bps |
 | 格式 | `CAM|<Device_ID>|<Token>|<Timestamp>\n` |
 
 ### 2.2 FPGA 与副控 ESP32 的 SPI 通信
@@ -151,7 +151,7 @@ CAM|1001-01-01|device-token-001|1712800000\n
 
 **FPGA 解析流程：**
 
-1. UART 接收模块（`uart_rx.v`）检测下降沿开始接收，115200波特率
+1. UART 接收模块（`uart_rx.v`）检测下降沿开始接收，9600波特率
 2. 命令解析模块（`uart_cmd_parser.v`）检测 `CAM|` 帧头
 3. 提取并存储 `device_id`、`token`、`timestamp`
 4. 解析成功后 `cmd_valid` 拉高一个时钟周期
@@ -285,7 +285,7 @@ stateDiagram-v2
 ### 4.2 UART 命令解析（`uart_rx.v` + `uart_cmd_parser.v`）
 
 **UART 接收特性：**
-- 波特率：115200bps
+- 波特率：9600bps
 - 数据位：8位
 - 停止位：1位
 - 黄金采样点：在每位中间采样，抗干扰
@@ -511,7 +511,7 @@ Content-Length: <JPEG_Size>
 | 文件路径 | 功能描述 |
 |---------|---------|
 | `project/image_capture_top.v` | 顶层模块，状态机控制 |
-| `rtl/uart_cmd_parser/uart_rx.v` | UART 接收，115200波特率 |
+| `rtl/uart_cmd_parser/uart_rx.v` | UART 接收，9600波特率 |
 | `rtl/uart_cmd_parser/uart_cmd_parser.v` | 命令解析，提取认证信息 |
 | `rtl/ov5640/ov5640_top.v` | OV5640 摄像头顶层 |
 | `rtl/ov5640/ov5640_cfg.v` | SCCB 寄存器配置（256个） |

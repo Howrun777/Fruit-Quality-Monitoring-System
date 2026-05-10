@@ -82,7 +82,7 @@ always @(posedge sys_clk or negedge sys_rst_n) begin
                     d5 <= seconds;
                     digit[0] <= d0; digit[1] <= d1;
                     digit[2] <= d2; digit[3] <= d3;
-                    digit[4] <= d4; digit[5] <= d5;
+                    digit[4] <= d4; digit[5] <= seconds;
                     calc_state <= 0; // Done!
                 end
             end

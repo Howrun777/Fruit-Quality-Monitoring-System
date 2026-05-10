@@ -2,10 +2,6 @@
 #include <cmath> // 必须引入，为了使用 log10
 
 double SugarCalc::calculate(const nlohmann::json& spectrum) {
-    // ==========================================
-    // 工业级 V3：宽动态范围映射 + 吸收率模型
-    // ==========================================
-    
     double ch555 = spectrum.value("ch555", 0.0);
     double ch640 = spectrum.value("ch640", 0.0);
     double ch680 = spectrum.value("ch680", 0.0);

@@ -154,7 +154,7 @@ void Logger::logRequest(const std::string& method, const std::string& endpoint,
         oss << " | " << extra;
     }
 
-    Level level = (status >= 200 && status < 400) ? INFO : ERROR;
+    Level level = (status < 400) ? INFO : ERROR;
     log(level, "HTTP", oss.str());
 }
 
@@ -169,7 +169,7 @@ void Logger::logResponse(const std::string& method, const std::string& endpoint,
         oss << " | " << msg;
     }
 
-    Level level = (status >= 200 && status < 400) ? INFO : ERROR;
+    Level level = (status < 400) ? INFO : ERROR;
     log(level, "HTTP", oss.str());
 }
 

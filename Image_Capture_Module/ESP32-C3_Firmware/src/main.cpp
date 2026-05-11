@@ -22,7 +22,8 @@ static const char* TAG = "MAIN";
 
 #define RX_BUFFER_SIZE (PROTOCOL_MAX_JPEG_SIZE + 512)
 // 动态分配内存，保护 Bootloader
-static uint8_t* s_rx_buffer = nullptr;
+static uint8_t* s_spi_packet_buffer = nullptr;
+static uint8_t* s_jpeg_buffer = nullptr;
 
 static protocol_parser_t s_parser;
 static TaskHandle_t s_data_processing_task_handle = nullptr;
@@ -63,9 +64,10 @@ void setup() {
     print_system_info();
     
     // 动态分配 100KB 的空间
-    s_rx_buffer = (uint8_t*)heap_caps_malloc(RX_BUFFER_SIZE, MALLOC_CAP_DMA);
-    if (s_rx_buffer == nullptr) {
-        ESP_LOGE(TAG, "Fatal Error: Failed to allocate 100KB for RX buffer!");
+    s_spi_packet_buffer = (uint8_t*)heap_caps_malloc(RX_BUFFER_SIZE, MALLOC_CAP_DMA);
+    s_jpeg_buffer = (uint8_t*)heap_caps_malloc(PROTOCOL_MAX_JPEG_SIZE, MALLOC_CAP_8BIT);
+    if (s_spi_packet_buffer == nullptr || s_jpeg_buffer == nullptr) {
+        ESP_LOGE(TAG, "Fatal Error: Failed to allocate image receive buffers!");
         while(1) { delay(100); }
     }
     
@@ -173,7 +175,7 @@ static void init_all_components(void) {
     };
     if (spi_slave_init(&spi_config)) spi_slave_start();
 
-    protocol_parser_init(&s_parser, s_rx_buffer, RX_BUFFER_SIZE);
+    protocol_parser_init(&s_parser, s_jpeg_buffer, PROTOCOL_MAX_JPEG_SIZE);
     vision_http_init();
 }
 
@@ -189,10 +191,10 @@ static void spi_data_task(void* pvParameters) {
         if (spi_slave_data_available()) {
             size_t len = spi_slave_get_received_len();
             if (len > 0) {
-                size_t read_len = spi_slave_read(s_rx_buffer, RX_BUFFER_SIZE);
+                size_t read_len = spi_slave_read(s_spi_packet_buffer, RX_BUFFER_SIZE);
                 
                 if (read_len > 0) {
-                    uint8_t state = protocol_parser_feed(&s_parser, s_rx_buffer, read_len);
+                    uint8_t state = protocol_parser_feed(&s_parser, s_spi_packet_buffer, read_len);
                     if (protocol_parser_is_complete(&s_parser)) {
                         digitalWrite(LED_PIN, HIGH);
                         xSemaphoreGive(s_data_ready_semaphore);

@@ -1,63 +1,115 @@
 `timescale 1ns/1ns
 
 module ov5640_jpeg_capture (
-    input  wire        sys_clk, sys_rst_n, capture_req,
-    input  wire        ov5640_pclk, ov5640_href, ov5640_vsync,
+    input  wire        sys_clk,
+    input  wire        sys_rst_n,
+    input  wire        capture_req,
+    input  wire        ov5640_pclk,
+    input  wire        ov5640_href,
+    input  wire        ov5640_vsync,
     input  wire [7:0]  ov5640_data,
-    output wire        sccb_scl, inout wire sccb_sda,
-    
+    output wire        sccb_scl,
+    inout  wire        sccb_sda,
+
     output reg  [7:0]  jpeg_data,
     output reg         jpeg_data_en,
     output reg  [31:0] jpeg_size,
     output reg         capture_done
 );
 
-// [此处请保留你的 I2C/SCCB 初始化逻辑]
+assign sccb_scl = 1'bz;
+assign sccb_sda = 1'bz;
 
-// JPEG 截取 FSM (pclk 时钟域)
-reg [1:0] cap_state;
-reg req_sync1, req_sync2;
-always @(posedge ov5640_pclk) begin req_sync1 <= capture_req; req_sync2 <= req_sync1; end
+localparam ST_IDLE   = 2'd0;
+localparam ST_SEARCH = 2'd1;
+localparam ST_STREAM = 2'd2;
+localparam ST_DONE   = 2'd3;
 
-reg [7:0] data_d1; reg href_d1;
-reg [31:0] byte_cnt; reg wait_d9;
+reg [1:0]  state;
+reg        req_meta;
+reg        req_sync;
+reg        req_sync_d;
+wire       req_rise = req_sync & ~req_sync_d;
+
+reg        vsync_d;
+reg        href_d;
+reg [7:0]  data_d;
+reg [31:0] byte_cnt;
 
 always @(posedge ov5640_pclk or negedge sys_rst_n) begin
     if (!sys_rst_n) begin
-        cap_state <= 0; jpeg_data <= 0; jpeg_data_en <= 0; 
-        jpeg_size <= 0; capture_done <= 0; byte_cnt <= 0;
+        req_meta   <= 1'b0;
+        req_sync   <= 1'b0;
+        req_sync_d <= 1'b0;
     end else begin
-        capture_done <= 0; jpeg_data_en <= 0;
-        data_d1 <= ov5640_data; href_d1 <= ov5640_href;
-        
-        case (cap_state)
-            0: if (req_sync2) cap_state <= 1; // 收到请求，准备抓图
-            1: begin // 找 FF D8
-                if (href_d1 && data_d1 == 8'hFF && ov5640_data == 8'hD8) begin
-                    jpeg_data <= 8'hFF; jpeg_data_en <= 1;
-                    byte_cnt <= 1; cap_state <= 2;
+        req_meta   <= capture_req;
+        req_sync   <= req_meta;
+        req_sync_d <= req_sync;
+    end
+end
+
+always @(posedge ov5640_pclk or negedge sys_rst_n) begin
+    if (!sys_rst_n) begin
+        state        <= ST_IDLE;
+        vsync_d      <= 1'b0;
+        href_d       <= 1'b0;
+        data_d       <= 8'd0;
+        byte_cnt     <= 32'd0;
+        jpeg_data    <= 8'd0;
+        jpeg_data_en <= 1'b0;
+        jpeg_size    <= 32'd0;
+        capture_done <= 1'b0;
+    end else begin
+        vsync_d      <= ov5640_vsync;
+        href_d       <= ov5640_href;
+        data_d       <= ov5640_data;
+        jpeg_data_en <= 1'b0;
+        capture_done <= 1'b0;
+
+        case (state)
+            ST_IDLE: begin
+                byte_cnt <= 32'd0;
+                if (req_rise)
+                    state <= ST_SEARCH;
+            end
+
+            ST_SEARCH: begin
+                byte_cnt <= 32'd0;
+                if (href_d && ov5640_href && data_d == 8'hFF && ov5640_data == 8'hD8) begin
+                    jpeg_data    <= 8'hFF;
+                    jpeg_data_en <= 1'b1;
+                    byte_cnt     <= 32'd1;
+                    state        <= ST_STREAM;
                 end
             end
-            2: begin // 存图中，找 FF D9
-                if (href_d1) begin
-                    if (data_d1 == 8'hFF && ov5640_data == 8'hD9) begin
-                        jpeg_data <= 8'hFF; jpeg_data_en <= 1;
-                        byte_cnt <= byte_cnt + 1; wait_d9 <= 1;
-                        cap_state <= 3;
-                    end else begin
-                        jpeg_data <= data_d1; jpeg_data_en <= 1;
-                        byte_cnt <= byte_cnt + 1;
+
+            ST_STREAM: begin
+                if (href_d) begin
+                    jpeg_data    <= data_d;
+                    jpeg_data_en <= 1'b1;
+                    byte_cnt     <= byte_cnt + 32'd1;
+
+                    if (data_d == 8'hFF && ov5640_data == 8'hD9) begin
+                        state <= ST_DONE;
                     end
                 end
             end
-            3: begin // 写入最后一个 D9 并结束
-                if (wait_d9) begin
-                    jpeg_data <= 8'hD9; jpeg_data_en <= 1;
-                    jpeg_size <= byte_cnt + 1; wait_d9 <= 0;
-                    capture_done <= 1; cap_state <= 0;
-                end
+
+            ST_DONE: begin
+                jpeg_data    <= 8'hD9;
+                jpeg_data_en <= 1'b1;
+                jpeg_size    <= byte_cnt + 32'd1;
+                capture_done <= 1'b1;
+                state        <= ST_IDLE;
             end
+
+            default: state <= ST_IDLE;
         endcase
+
+        if (state != ST_IDLE && !ov5640_vsync && vsync_d) begin
+            state <= ST_IDLE;
+        end
     end
 end
+
 endmodule

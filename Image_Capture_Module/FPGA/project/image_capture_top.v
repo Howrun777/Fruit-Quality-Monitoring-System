@@ -48,7 +48,6 @@ wire clk_100m_shift;
 wire clk_25m;
 wire locked;
 wire rst_n = sys_rst_n & locked;
-wire ui_rst_n = sys_rst_n;
 
 clk_gen u_pll (
     .areset (~sys_rst_n),
@@ -72,7 +71,7 @@ wire         cmd_error;
 
 uart_cmd_parser u_parser (
     .sys_clk   (sys_clk),
-    .sys_rst_n (ui_rst_n),
+    .sys_rst_n (rst_n),
     .uart_rx   (uart_rx),
     .cmd_start (cmd_start),
     .cmd_valid (cmd_valid),
@@ -84,14 +83,14 @@ uart_cmd_parser u_parser (
 
 buzzer_pwm_ctrl u_buzzer (
     .sys_clk   (sys_clk),
-    .sys_rst_n (ui_rst_n),
+    .sys_rst_n (rst_n),
     .cmd_valid (cmd_start),
     .beep      (beep)
 );
 
 rtc_display_74hc595 u_display (
     .sys_clk   (sys_clk),
-    .sys_rst_n (ui_rst_n),
+    .sys_rst_n (rst_n),
     .cmd_valid (cmd_valid),
     .timestamp (timestamp),
     .ds        (ds),

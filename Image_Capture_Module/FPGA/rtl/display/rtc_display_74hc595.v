@@ -38,7 +38,7 @@ always @(posedge sys_clk or negedge sys_rst_n) begin
         calc_state <= 0; temp_val <= 0;
         hours <= 0; minutes <= 0; seconds <= 0;
         d0<=0; d1<=0; d2<=0; d3<=0; d4<=0; d5<=0;
-        digit[0]<=1; digit[1]<=2; digit[2]<=3; digit[3]<=4; digit[4]<=5; digit[5]<=6;
+        digit[0]<=0; digit[1]<=0; digit[2]<=0; digit[3]<=0; digit[4]<=0; digit[5]<=0;
     end else begin
         case (calc_state)
             0: if (cmd_valid) begin temp_val <= timestamp + BEIJING_OFFSET; calc_state <= 1; end

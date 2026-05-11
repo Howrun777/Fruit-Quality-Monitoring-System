@@ -19,6 +19,7 @@
 #include <stdbool.h>
 #include <stddef.h>
 #include <string.h>
+#include <sys/time.h>
 
 // ============================================================
 // Constants 状态机枚举
@@ -70,6 +71,10 @@ typedef struct {
     size_t buffer_size;
     size_t buffer_pos;
     size_t jpeg_start_offset;
+    
+    // 超时控制 (微秒)
+    int64_t last_byte_time;
+    int64_t timeout_us;
 } protocol_parser_t;
 
 // ============================================================

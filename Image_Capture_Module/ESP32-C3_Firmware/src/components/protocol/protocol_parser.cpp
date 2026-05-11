@@ -22,6 +22,11 @@ void protocol_parser_init(protocol_parser_t* parser, uint8_t* buffer, size_t buf
     parser->buffer = buffer;
     parser->buffer_size = buffer_size;
     parser->state = PROTOCOL_STATE_IDLE;
+    parser->timeout_us = 5000000; // 5秒超时
+    
+    struct timeval tv;
+    gettimeofday(&tv, NULL);
+    parser->last_byte_time = tv.tv_sec * 1000000LL + tv.tv_usec;
     
     ESP_LOGI(TAG, "Protocol parser initialized (Strict Fixed-Length Format). Buffer size: %d", buffer_size);
 }
@@ -50,8 +55,24 @@ uint8_t protocol_parser_feed(protocol_parser_t* parser, const uint8_t* data, siz
         return parser->state;
     }
 
+    // 超时检查：如果超过 timeout_us 微秒没有收到数据，重置解析器
+    struct timeval tv;
+    gettimeofday(&tv, NULL);
+    int64_t current_time = tv.tv_sec * 1000000LL + tv.tv_usec;
+    if (parser->state != PROTOCOL_STATE_IDLE && 
+        (current_time - parser->last_byte_time) > parser->timeout_us) {
+        ESP_LOGW(TAG, "Protocol timeout, resetting parser (idle time: %lld us)", 
+                 current_time - parser->last_byte_time);
+        protocol_parser_reset(parser);
+        return PROTOCOL_STATE_ERROR;
+    }
+
     for (size_t i = 0; i < len; i++) {
         uint8_t byte = data[i];
+        
+        // 更新最后接收时间
+        gettimeofday(&tv, NULL);
+        parser->last_byte_time = tv.tv_sec * 1000000LL + tv.tv_usec;
 
         switch (parser->state) {
             case PROTOCOL_STATE_IDLE:

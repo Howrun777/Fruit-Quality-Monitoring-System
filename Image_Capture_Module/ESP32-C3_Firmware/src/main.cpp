@@ -84,7 +84,6 @@ void setup() {
     xTaskCreatePinnedToCore(&spi_data_task, "spi_data", TASK_STACK_SIZE_MEDIUM, NULL, TASK_PRIORITY_HIGH, &s_data_processing_task_handle, 0);
     xTaskCreatePinnedToCore(&data_processing_task, "data_proc", TASK_STACK_SIZE_LARGE, NULL, TASK_PRIORITY_MEDIUM, NULL, 0);
     xTaskCreatePinnedToCore(&upload_task, "upload", TASK_STACK_SIZE_MEDIUM, NULL, TASK_PRIORITY_MEDIUM, &s_upload_task_handle, 0);
-    xTaskCreatePinnedToCore(&blink_led_task, "blink", 2048, NULL, TASK_PRIORITY_LOW, NULL, 0);
 
     ESP_LOGI(TAG, "System initialization complete");
 }
@@ -194,10 +193,16 @@ static void spi_data_task(void* pvParameters) {
                 size_t read_len = spi_slave_read(s_spi_packet_buffer, RX_BUFFER_SIZE);
                 
                 if (read_len > 0) {
+                    // 收到数据，LED 快闪一下表示正在解析
+                    digitalWrite(LED_PIN, HIGH);
+                    ESP_LOGI(TAG, "Received %d bytes, parsing...", read_len);
+                    
                     uint8_t state = protocol_parser_feed(&s_parser, s_spi_packet_buffer, read_len);
+                    ESP_LOGI(TAG, "Parser state: %s", protocol_parser_state_str(state));
+                    
                     if (protocol_parser_is_complete(&s_parser)) {
-                        digitalWrite(LED_PIN, HIGH);
                         xSemaphoreGive(s_data_ready_semaphore);
+                        ESP_LOGI(TAG, "Packet complete! Giving semaphore.");
                     }
                 }
             }
@@ -210,12 +215,20 @@ static void data_processing_task(void* pvParameters) {
     parsed_packet_t packet;
     while (true) {
         if (xSemaphoreTake(s_data_ready_semaphore, portMAX_DELAY) == pdTRUE) {
+            ESP_LOGI(TAG, "Processing complete packet...");
             protocol_parser_get_packet(&s_parser, &packet);
             if (packet.valid) {
+                ESP_LOGI(TAG, "Packet valid! Queuing for upload (size: %d)...", packet.file_size);
                 if (xQueueSend(s_upload_queue, &packet, pdMS_TO_TICKS(1000)) == pdTRUE) {
-                    ESP_LOGI(TAG, "Packet queued! Waiting for HTTP upload to complete...");
+                    ESP_LOGI(TAG, "Packet queued! Waiting for HTTP upload...");
                     xSemaphoreTake(s_upload_done_semaphore, portMAX_DELAY);
+                    // 上传完成，熄灭 LED
+                    digitalWrite(LED_PIN, LOW);
+                    ESP_LOGI(TAG, "Upload done, LED OFF");
                 }
+            } else {
+                ESP_LOGE(TAG, "Packet invalid, LED OFF");
+                digitalWrite(LED_PIN, LOW);
             }
             protocol_parser_reset(&s_parser);
             ESP_LOGI(TAG, "Parser reset, ready for next image");

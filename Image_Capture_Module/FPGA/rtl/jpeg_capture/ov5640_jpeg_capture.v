@@ -106,7 +106,9 @@ always @(posedge ov5640_pclk or negedge sys_rst_n) begin
             default: state <= ST_IDLE;
         endcase
 
-        if (state != ST_IDLE && !ov5640_vsync && vsync_d) begin
+        // 只有在接收数据流的中途(ST_STREAM)，遇到下一帧的 VSYNC 上升沿(帧异常结束)，才强制退出
+        // 原来错误地检测 VSYNC 下降沿，会误将新帧开始误判为异常，导致错过 FF D8
+        if (state == ST_STREAM && ov5640_vsync && !vsync_d) begin
             state <= ST_IDLE;
         end
     end

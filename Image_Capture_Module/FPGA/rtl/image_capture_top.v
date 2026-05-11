@@ -100,18 +100,19 @@ always @(posedge sys_clk or negedge rst_n) begin
         sys_state <= SYS_INIT;
         capture_req <= 0; wr_rst_req <= 0; rd_rst_req <= 0;
     end else begin
-        capture_req <= 0; wr_rst_req <= 0; rd_rst_req <= 0;
+        wr_rst_req <= 0; rd_rst_req <= 0;
         case (sys_state)
             SYS_INIT: if (sdram_init_end) sys_state <= SYS_IDLE;
             SYS_IDLE: begin
                 if (cmd_valid) begin 
                     wr_rst_req <= 1; 
-                    capture_req <= 1; 
+                    capture_req <= 1; // 保持拉高，直到 capture_done
                     sys_state <= SYS_CAPTURE;
                 end
             end
             SYS_CAPTURE: begin
                 if (capture_done) begin 
+                    capture_req <= 0; // 收到完成信号后再拉低
                     rd_rst_req <= 1;  
                     sys_state <= SYS_SPI_TX;
                 end

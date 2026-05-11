@@ -478,10 +478,10 @@ print(f"Input: {input_name}, Output: {output_name}")
 
 | 功能 | FPGA 侧 | ESP32-C3 侧 |
 |------|---------|-------------|
-| SPI 时钟 | PIN_B1 | GPIO2 (HSPI SCK) |
-| SPI MOSI | PIN_B10 | GPIO3 (HSPI MOSI) |
-| SPI MISO | PIN_A9 | GPIO10 (HSPI MISO) |
-| SPI 片选 | PIN_B9 | GPIO6 (HSPI CS) |
+| SPI 时钟 | PIN_A10 | GPIO4 (SCK) |
+| SPI MOSI | PIN_B10 | GPIO5 (MOSI) |
+| SPI MISO | PIN_A9 | GPIO6 (MISO) |
+| SPI 片选 | PIN_B9 | GPIO7 (CS) |
 | 共地 | GND | GND |
 
 ### 6.2.2 固件核心工作流

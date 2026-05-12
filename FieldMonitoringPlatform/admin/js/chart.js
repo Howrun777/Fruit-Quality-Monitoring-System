@@ -3,6 +3,7 @@ let tempChart = null;
 let humChart = null;
 let lightChart = null;
 let spoilChart = null;
+const chartOptionState = new WeakMap();
 
 const OFFLINE_THRESHOLD_SECONDS = 30 * 60;
 const chartTheme = {
@@ -94,6 +95,57 @@ function statusTextByMetric(metric, value) {
     return '正常';
 }
 
+function normalizeThresholdLines(threshold, thresholdName, thresholdLines) {
+    if (Array.isArray(thresholdLines)) return thresholdLines;
+    return threshold === null ? [] : [{ value: threshold, name: thresholdName, color: chartTheme.amber }];
+}
+
+function getChartConfigSignature(config, markLines) {
+    return JSON.stringify({
+        name: config.name,
+        yMin: config.yMin,
+        yMax: config.yMax,
+        yInterval: config.yInterval,
+        unit: config.unit,
+        color: config.color,
+        metric: config.metric,
+        thresholds: markLines.map(line => ({
+            value: line.value,
+            name: line.name,
+            color: line.color,
+            position: line.position
+        }))
+    });
+}
+
+function setManagedChartOption(chart, config) {
+    if (!chart) return;
+
+    const markLines = normalizeThresholdLines(config.threshold, config.thresholdName, config.thresholdLines);
+    const signature = getChartConfigSignature(config, markLines);
+    const previous = chartOptionState.get(chart);
+
+    if (!previous || previous.signature !== signature) {
+        chart.setOption(buildOption({ ...config, thresholdLines: markLines }), true);
+        chartOptionState.set(chart, { signature });
+        return;
+    }
+
+    const hasData = Array.isArray(config.data) && config.data.length > 0;
+    chart.setOption({
+        xAxis: {
+            min: config.timeRange.min,
+            max: config.timeRange.max,
+            interval: config.timeRange.interval
+        },
+        series: [{
+            name: config.name,
+            data: config.data,
+            showSymbol: hasData
+        }]
+    });
+}
+
 function buildOption({
     name,
     data,
@@ -110,9 +162,7 @@ function buildOption({
     metric = ''
 }) {
     const hasData = Array.isArray(data) && data.length > 0;
-    const markLines = Array.isArray(thresholdLines)
-        ? thresholdLines
-        : (threshold === null ? [] : [{ value: threshold, name: thresholdName, color: chartTheme.amber }]);
+    const markLines = normalizeThresholdLines(threshold, thresholdName, thresholdLines);
 
     return {
         color: [color],
@@ -187,10 +237,14 @@ function buildOption({
             smooth: true,
             showSymbol: hasData,
             symbol: 'circle',
-            symbolSize: 6,
+            symbolSize: 5,
             connectNulls: false,
             lineStyle: { width: 3, color },
-            itemStyle: { color, borderColor: '#fff', borderWidth: 2 },
+            itemStyle: { color, borderColor: color, borderWidth: 0 },
+            emphasis: {
+                itemStyle: { color, borderColor: color, borderWidth: 0 },
+                scale: 1.35
+            },
             areaStyle: {
                 color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
                     { offset: 0, color: hexToRgba(color, 0.20) },
@@ -223,8 +277,7 @@ function buildOption({
 function renderFruitHistoryChart(data, deviceId, timeRange, maturityThreshold = 15.0) {
     const title = document.getElementById('fruit-history-title');
     if (title) title.innerText = deviceId ? `${deviceId} 糖度历史` : '请选择设备';
-    if (!fruitHistoryChart) return;
-    fruitHistoryChart.setOption(buildOption({
+    setManagedChartOption(fruitHistoryChart, {
         name: '糖度',
         data,
         timeRange,
@@ -236,12 +289,11 @@ function renderFruitHistoryChart(data, deviceId, timeRange, maturityThreshold = 
         threshold: maturityThreshold,
         thresholdName: '成熟糖度',
         metric: 'sugar'
-    }), true);
+    });
 }
 
 function renderSpoilHistoryChart(data, timeRange) {
-    if (!spoilChart) return;
-    spoilChart.setOption(buildOption({
+    setManagedChartOption(spoilChart, {
         name: '腐败度',
         data,
         timeRange,
@@ -253,12 +305,12 @@ function renderSpoilHistoryChart(data, timeRange) {
         threshold: 60,
         thresholdName: '预警线',
         metric: 'spoil'
-    }), true);
+    });
 }
 
 function renderEnvHistoryCharts(tempData, humData, lightData, tempRange, humRange, lightRange) {
     if (tempChart) {
-        tempChart.setOption(buildOption({
+        setManagedChartOption(tempChart, {
             name: '温度',
             data: tempData,
             timeRange: tempRange,
@@ -272,11 +324,11 @@ function renderEnvHistoryCharts(tempData, humData, lightData, tempRange, humRang
                 { value: 40, name: '高温', color: chartTheme.amber }
             ],
             metric: 'temp'
-        }), true);
+        });
     }
 
     if (humChart) {
-        humChart.setOption(buildOption({
+        setManagedChartOption(humChart, {
             name: '湿度',
             data: humData,
             timeRange: humRange,
@@ -290,14 +342,14 @@ function renderEnvHistoryCharts(tempData, humData, lightData, tempRange, humRang
                 { value: 80, name: '湿度上限', color: chartTheme.amber }
             ],
             metric: 'hum'
-        }), true);
+        });
     }
 
     if (lightChart) {
         const lightInTenThousandLux = Array.isArray(lightData)
             ? lightData.map(point => [point[0], Number(point[1] || 0) / 10000])
             : [];
-        lightChart.setOption(buildOption({
+        setManagedChartOption(lightChart, {
             name: '光照',
             data: lightInTenThousandLux,
             timeRange: lightRange,
@@ -314,7 +366,7 @@ function renderEnvHistoryCharts(tempData, humData, lightData, tempRange, humRang
                 return `${Number(value).toFixed(value % 1 === 0 ? 0 : 1)}万Lux`;
             },
             metric: 'light'
-        }), true);
+        });
     }
 }
 

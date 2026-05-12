@@ -4,264 +4,477 @@ let humChart = null;
 let lightChart = null;
 let spoilChart = null;
 
-/**
- * 横向滚轮接管函数
- * 当鼠标悬浮在横向容器上时，将垂直滚轮事件转换为水平滚动
- */
+const OFFLINE_THRESHOLD_SECONDS = 30 * 60;
+const chartTheme = {
+    brand: '#b4232d',
+    brandSoft: 'rgba(180, 35, 45, 0.12)',
+    green: '#168a5a',
+    amber: '#c87800',
+    red: '#d92d20',
+    blue: '#2563eb',
+    ink: '#1f2937',
+    muted: '#667085',
+    grid: '#e6eaf0'
+};
+
+function hexToRgba(hex, alpha) {
+    const normalized = hex.replace('#', '');
+    const value = parseInt(normalized.length === 3
+        ? normalized.split('').map(ch => ch + ch).join('')
+        : normalized, 16);
+    const red = (value >> 16) & 255;
+    const green = (value >> 8) & 255;
+    const blue = value & 255;
+    return `rgba(${red}, ${green}, ${blue}, ${alpha})`;
+}
+
 function setupHorizontalScroll(containerId) {
     const container = document.getElementById(containerId);
     if (!container) return;
-    
-    container.addEventListener('wheel', (e) => {
-        // 只有当容器有横向滚动内容时才接管
+
+    container.addEventListener('wheel', (event) => {
         if (container.scrollWidth > container.clientWidth + 5) {
-            e.preventDefault();
-            // 将垂直滚轮 deltaY 转换为水平滚动
-            container.scrollLeft += e.deltaY;
+            event.preventDefault();
+            container.scrollLeft += event.deltaY;
         }
     }, { passive: false });
 }
 
-/**
- * AI视觉快照画廊渲染函数
- * @param {Array} dataList - 图片数据数组，格式: [{imgUrl, quality, time}, ...]
- * 渲染完成后自动滚动到最右侧，显示最新图片
- */
-function renderVisionGallery(dataList) {
-    const container = document.getElementById('vision-gallery-container');
-    if (!container) return;
-    
-    container.innerHTML = '';
-    
-    if (!dataList || dataList.length === 0) {
-        container.innerHTML = '<div style="padding: 30px 20px; color: #999; text-align: center; width: 100%;">暂无快照数据</div>';
-        return;
-    }
-    
-    dataList.forEach(item => {
-        const div = document.createElement('div');
-        div.className = 'vision-item';
-        div.innerHTML = `
-            <img src="${item.imgUrl}" alt="樱桃快照" onerror="this.style.display='none';">
-            <span class="quality-tag">品质: ${item.quality}</span>
-            <span class="time-tag">${item.time}</span>
-        `;
-        container.appendChild(div);
-    });
-    
-    // 渲染完成后，延迟滚动到最右侧（显示最新图片）
-    requestAnimationFrame(() => {
-        container.scrollLeft = container.scrollWidth;
-    });
-}
-
-/**
- * 测试假数据 - 用于后端接口未完成时的调试
- * 使用示例: renderVisionGallery(getMockVisionData());
- */
-function getMockVisionData() {
-    // 使用服务器绝对路径，避免 file:// 协议限制
-    const serverIP = "http://47.107.41.102:9000";
-    const imgPath = `${serverIP}/assets/uploads/1001-01-01_1712800000.jpg`;
-
-    return [
-        { imgUrl: imgPath, quality: 10, time: '4.29-23:15' },
-        { imgUrl: imgPath, quality: 9, time: '4.29-23:10' },
-        { imgUrl: imgPath, quality: 8, time: '4.29-23:05' },
-        { imgUrl: imgPath, quality: 7, time: '4.29-23:00' },
-        { imgUrl: imgPath, quality: 9, time: '4.29-22:55' },
-        { imgUrl: imgPath, quality: 6, time: '4.29-22:50' },
-        { imgUrl: imgPath, quality: 8, time: '4.29-22:45' },
-    ];
-}
-
-document.addEventListener('DOMContentLoaded', () => {
+function initCharts() {
     fruitHistoryChart = echarts.init(document.getElementById('fruitHistoryChart'));
     tempChart = echarts.init(document.getElementById('tempChart'));
     humChart = echarts.init(document.getElementById('humChart'));
     lightChart = echarts.init(document.getElementById('lightChart'));
     spoilChart = echarts.init(document.getElementById('spoilChart'));
+}
 
-    // 初始化横向滚轮接管
-    setupHorizontalScroll('fruit-grid-container');
-    setupHorizontalScroll('vision-gallery-container');
-
-    // 初始化视觉数据画廊为空（等待 real 数据加载）
-    renderVisionGallery([]);
-
-    window.addEventListener('resize', () => {
-        fruitHistoryChart.resize();
-        tempChart.resize(); 
-        humChart.resize(); 
-        lightChart.resize();
-        spoilChart.resize(); 
+function resizeCharts() {
+    [fruitHistoryChart, tempChart, humChart, lightChart, spoilChart].forEach(chart => {
+        if (chart) chart.resize();
     });
-});
+}
 
-function buildStrictOption(data, min, max, interval, colorsArray, timeRange, threshold = null, yAxisSuffix = '') {
-    let option = {
-        grid: { left: '10%', right: '4%', bottom: '15%', top: '10%' },
-        tooltip: { 
+function formatDateTime(ms, mode = 'full') {
+    const date = new Date(ms);
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    const hour = String(date.getHours()).padStart(2, '0');
+    const minute = String(date.getMinutes()).padStart(2, '0');
+    const second = String(date.getSeconds()).padStart(2, '0');
+    if (mode === 'short') return `${month}.${day} ${hour}:${minute}`;
+    return `${date.getFullYear()}-${month}-${day} ${hour}:${minute}:${second}`;
+}
+
+function statusTextByMetric(metric, value) {
+    if (value === null || value === undefined || Number.isNaN(value)) return '无数据';
+    if (metric === 'temp') {
+        if (value < 10) return '低温异常';
+        if (value > 40) return '高温异常';
+        return '温度稳定';
+    }
+    if (metric === 'hum') {
+        if (value < 40) return '湿度偏低';
+        if (value > 80) return '湿度偏高';
+        return '湿度适宜';
+    }
+    if (metric === 'light') {
+        if (value < 1) return '光照偏低';
+        if (value > 7) return '强光风险';
+        return '光照正常';
+    }
+    if (metric === 'spoil') {
+        if (value > 60) return '腐败预警';
+        if (value > 35) return '风险升高';
+        return '风险可控';
+    }
+    if (metric === 'sugar') {
+        if (value >= 15) return '达到成熟糖度';
+        return '糖度累积中';
+    }
+    return '正常';
+}
+
+function buildOption({
+    name,
+    data,
+    timeRange,
+    yMin,
+    yMax,
+    yInterval,
+    unit = '',
+    color = chartTheme.brand,
+    threshold = null,
+    thresholdName = '阈值',
+    thresholdLines = null,
+    yFormatter = null,
+    metric = ''
+}) {
+    const hasData = Array.isArray(data) && data.length > 0;
+    const markLines = Array.isArray(thresholdLines)
+        ? thresholdLines
+        : (threshold === null ? [] : [{ value: threshold, name: thresholdName, color: chartTheme.amber }]);
+
+    return {
+        color: [color],
+        grid: { left: 60, right: 42, bottom: 34, top: 26 },
+        tooltip: {
             trigger: 'axis',
-            axisPointer: { type: 'line' },
-            formatter: function (params) {
-                if (!params || params.length === 0) return '';
-                let date = new Date(params[0].value[0]);
-                let Y = date.getFullYear();
-                let M = date.getMonth() + 1;
-                let d = date.getDate();
-                let h = date.getHours().toString().padStart(2, '0');
-                let m = date.getMinutes().toString().padStart(2, '0');
-                let s = date.getSeconds().toString().padStart(2, '0');
-                
-                let timeStr = `${Y}年${M}月${d}日 ${h}:${m}:${s}`;
-                let html = `<div style="font-size:0.9rem; color:#666; margin-bottom:5px;">${timeStr}</div>`;
-                
-                params.forEach(param => {
-                    let val = param.value[1];
-                    if (typeof val === 'number' && !Number.isInteger(val)) val = val.toFixed(1);
-                    html += `<div>${param.marker} ${param.seriesName}: <span style="font-weight:bold; color:#333;">${val}${yAxisSuffix}</span></div>`;
-                });
-                return html;
-            }
-        },
-        xAxis: { 
-            type: 'value', 
-            min: timeRange.min, 
-            max: timeRange.max, 
-            interval: timeRange.interval, 
-            axisTick: { show: false }, 
-            axisLine: { show: false },
-            axisLabel: {
-                showMinLabel: true, 
-                showMaxLabel: true, 
-                formatter: function (value) {
-                    let date = new Date(value);
-                    let M = (date.getMonth() + 1).toString().padStart(2, '0');
-                    let d = date.getDate().toString().padStart(2, '0');
-                    let h = date.getHours().toString().padStart(2, '0');
-                    let m = date.getMinutes().toString().padStart(2, '0');
-                    
-                    if (timeRange.interval >= 24 * 3600 * 1000) return `${M}.${d}`; 
-                    else return `${h}:${m}`; 
-                }
-            }
-        },
-        yAxis: { 
-            type: 'value', 
-            min: min, max: max, interval: interval,
-            axisLabel: {
-                formatter: `{value}${yAxisSuffix}`,
-                color: (value) => {
-                    let idx = Math.round((value - min) / interval);
-                    return colorsArray[idx] || '#333';
-                }
+            backgroundColor: 'rgba(255,255,255,0.96)',
+            borderColor: '#e6eaf0',
+            borderWidth: 1,
+            padding: [10, 12],
+            textStyle: { color: chartTheme.ink, fontSize: 12 },
+            axisPointer: {
+                type: 'line',
+                lineStyle: { color: '#98a2b3', type: 'dashed' }
             },
-            splitLine: { show: true, lineStyle: { type: 'solid', color: colorsArray } }
+            formatter(params) {
+                if (!params || !params.length) return '';
+                const point = params[0];
+                const value = point.value[1];
+                const formatted = typeof value === 'number'
+                    ? (metric === 'light' ? Number(value.toFixed(2)).toString() : value.toFixed(1))
+                    : value;
+                return `
+                    <div style="font-weight:800;margin-bottom:6px;">${formatDateTime(point.value[0])}</div>
+                    <div>${point.marker}${name}: <strong>${formatted}${unit}</strong></div>
+                    <div style="margin-top:4px;color:#667085;">${statusTextByMetric(metric, value)}</div>
+                `;
+            }
+        },
+        xAxis: {
+            type: 'value',
+            min: timeRange.min,
+            max: timeRange.max,
+            interval: timeRange.interval,
+            axisLine: { show: false },
+            axisTick: { show: false },
+            splitLine: { show: false },
+            axisLabel: {
+                color: chartTheme.muted,
+                fontSize: 11,
+                hideOverlap: true,
+                formatter(value) {
+                    const date = new Date(value);
+                    const month = String(date.getMonth() + 1).padStart(2, '0');
+                    const day = String(date.getDate()).padStart(2, '0');
+                    const hour = String(date.getHours()).padStart(2, '0');
+                    const minute = String(date.getMinutes()).padStart(2, '0');
+                    return timeRange.interval >= 24 * 3600 * 1000 ? `${month}.${day}` : `${hour}:${minute}`;
+                }
+            }
+        },
+        yAxis: {
+            type: 'value',
+            min: yMin,
+            max: yMax,
+            interval: yInterval,
+            axisLine: { show: false },
+            axisTick: { show: false },
+            splitLine: { lineStyle: { color: chartTheme.grid } },
+            axisLabel: {
+                color: chartTheme.muted,
+                fontSize: 11,
+                formatter(value) {
+                    return typeof yFormatter === 'function' ? yFormatter(value) : `${value}${unit}`;
+                }
+            }
         },
         series: [{
-            name: '数值',
+            name,
             type: 'line',
-            data: data, 
-            smooth: false,
-            showSymbol: true,          
-            symbol: 'circle',          
-            symbolSize: 6,             
-            itemStyle: { color: '#D93843' }, 
-            lineStyle: { color: '#8B1820', width: 2.5 }, 
-            connectNulls: false
+            data,
+            smooth: true,
+            showSymbol: hasData,
+            symbol: 'circle',
+            symbolSize: 6,
+            connectNulls: false,
+            lineStyle: { width: 3, color },
+            itemStyle: { color, borderColor: '#fff', borderWidth: 2 },
+            areaStyle: {
+                color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                    { offset: 0, color: hexToRgba(color, 0.20) },
+                    { offset: 1, color: 'rgba(255,255,255,0)' }
+                ])
+            },
+            markLine: markLines.length === 0 ? undefined : {
+                symbol: 'none',
+                data: markLines.map(line => ({
+                    yAxis: line.value,
+                    name: line.name,
+                    lineStyle: {
+                        color: line.color || chartTheme.amber,
+                        width: line.width || 2,
+                        type: line.type || 'dashed'
+                    },
+                    label: {
+                        color: line.color || chartTheme.amber,
+                        fontWeight: 800,
+                        position: line.position || 'insideEndTop',
+                        distance: line.distance || [0, 8],
+                        formatter: line.name
+                    }
+                }))
+            }
         }]
     };
-
-    if (threshold !== null) {
-        option.series[0].markLine = {
-            symbol: 'none',
-            data: [{ yAxis: threshold }],
-            lineStyle: { color: '#f39c12', type: 'solid', width: 2 },
-            label: { show: false }
-        };
-    }
-    return option;
 }
 
 function renderFruitHistoryChart(data, deviceId, timeRange, maturityThreshold = 15.0) {
-    document.getElementById('fruit-history-title').innerText = `[${deviceId}] 糖度历史变化`;
-    const colors = ['#333', '#333', '#333', '#333', '#333', '#333', '#D93843', '#D93843', '#D93843'];
-    fruitHistoryChart.setOption(buildStrictOption(data, 0, 25, 3, colors, timeRange, maturityThreshold), true);
+    const title = document.getElementById('fruit-history-title');
+    if (title) title.innerText = deviceId ? `${deviceId} 糖度历史` : '请选择设备';
+    if (!fruitHistoryChart) return;
+    fruitHistoryChart.setOption(buildOption({
+        name: '糖度',
+        data,
+        timeRange,
+        yMin: 0,
+        yMax: 25,
+        yInterval: 5,
+        unit: ' Brix',
+        color: chartTheme.brand,
+        threshold: maturityThreshold,
+        thresholdName: '成熟糖度',
+        metric: 'sugar'
+    }), true);
 }
 
 function renderSpoilHistoryChart(data, timeRange) {
-    const spoilColors = ['#333', '#333', '#333', '#e74c3c', '#e74c3c']; 
-    let option = buildStrictOption(data, 0, 100, 20, spoilColors, timeRange, 60, '%');
-    option.series[0].name = "腐败度";
-    option.series[0].areaStyle = {
-        color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
-            { offset: 0, color: 'rgba(217, 56, 67, 0.5)' },
-            { offset: 1, color: 'rgba(217, 56, 67, 0.05)' }
-        ])
-    };
-    spoilChart.setOption(option, true);
+    if (!spoilChart) return;
+    spoilChart.setOption(buildOption({
+        name: '腐败度',
+        data,
+        timeRange,
+        yMin: 0,
+        yMax: 100,
+        yInterval: 20,
+        unit: '%',
+        color: chartTheme.red,
+        threshold: 60,
+        thresholdName: '预警线',
+        metric: 'spoil'
+    }), true);
 }
 
 function renderEnvHistoryCharts(tempData, humData, lightData, tempRange, humRange, lightRange) {
-    const tempColors = ['#D93843', '#D93843', '#333', '#333', '#333', '#D93843', '#D93843', '#D93843'];
-    tempChart.setOption(buildStrictOption(tempData, -10, 60, 10, tempColors, tempRange), true);
+    if (tempChart) {
+        tempChart.setOption(buildOption({
+            name: '温度',
+            data: tempData,
+            timeRange: tempRange,
+            yMin: -10,
+            yMax: 60,
+            yInterval: 10,
+            unit: '℃',
+            color: chartTheme.red,
+            thresholdLines: [
+                { value: 10, name: '低温', color: chartTheme.blue, position: 'insideEndBottom', distance: [0, 8] },
+                { value: 40, name: '高温', color: chartTheme.amber }
+            ],
+            metric: 'temp'
+        }), true);
+    }
 
-    const humColors = ['#D93843', '#D93843', '#333', '#333', '#333', '#D93843', '#D93843'];
-    humChart.setOption(buildStrictOption(humData, 30, 90, 10, humColors, humRange), true);
+    if (humChart) {
+        humChart.setOption(buildOption({
+            name: '湿度',
+            data: humData,
+            timeRange: humRange,
+            yMin: 30,
+            yMax: 90,
+            yInterval: 10,
+            unit: '%',
+            color: chartTheme.blue,
+            thresholdLines: [
+                { value: 40, name: '低湿度', color: chartTheme.amber, position: 'insideEndBottom', distance: [0, 8] },
+                { value: 80, name: '湿度上限', color: chartTheme.amber }
+            ],
+            metric: 'hum'
+        }), true);
+    }
 
-    const lightColors = ['#D93843', '#D93843', '#D93843', '#333', '#333', '#333', '#333', '#D93843', '#D93843'];
-    lightChart.setOption(buildStrictOption(lightData, 0, 90000, 10000, lightColors, lightRange), true);
+    if (lightChart) {
+        const lightInTenThousandLux = Array.isArray(lightData)
+            ? lightData.map(point => [point[0], Number(point[1] || 0) / 10000])
+            : [];
+        lightChart.setOption(buildOption({
+            name: '光照',
+            data: lightInTenThousandLux,
+            timeRange: lightRange,
+            yMin: 0,
+            yMax: 9,
+            yInterval: 1.5,
+            unit: ' 万Lux',
+            color: chartTheme.amber,
+            thresholdLines: [
+                { value: 1, name: '低光照', color: chartTheme.blue, position: 'insideEndBottom', distance: [0, 8] },
+                { value: 7, name: '强光', color: chartTheme.amber }
+            ],
+            yFormatter(value) {
+                return `${Number(value).toFixed(value % 1 === 0 ? 0 : 1)}万Lux`;
+            },
+            metric: 'light'
+        }), true);
+    }
 }
 
 function renderFruitGrid(fruitList) {
     const container = document.getElementById('fruit-grid-container');
+    if (!container) return;
     container.innerHTML = '';
-    
+
+    const now = Math.floor(Date.now() / 1000);
+    const list = Array.isArray(fruitList) ? fruitList : [];
     let ripeCount = 0;
-    
-    if(fruitList.length === 0) {
-        document.getElementById('fruit-summary').innerText = `总计: 0 | 已熟: 0`;
+    let offlineCount = 0;
+
+    if (!list.length) {
+        container.innerHTML = '<div class="empty-state">当前产区暂无设备数据</div>';
+        updateDashboardStats({ total: 0, online: 0, offline: 0, ripe: 0 });
         return;
     }
 
-    const currentUnixTime = Math.floor(new Date().getTime() / 1000);
-    const OFFLINE_THRESHOLD = 30 * 60; 
+    list.forEach((fruit) => {
+        const maturity = Number(fruit.maturity_score || 0);
+        const brix = Number(fruit.sugar_brix || 0);
+        const percent = Math.max(0, Math.round(maturity * 100));
+        const isRipe = maturity >= 1.0;
+        const isOffline = fruit.collected_at ? (now - Number(fruit.collected_at)) > OFFLINE_THRESHOLD_SECONDS : true;
 
-    fruitList.forEach(fruit => {
-        let matPercent = Math.round(fruit.maturity_score * 100);
-        const isRipe = fruit.maturity_score >= 1.0;
-        if (isRipe) ripeCount++;
-        
-        let isOffline = false;
-        if (fruit.collected_at) {
-            isOffline = (currentUnixTime - fruit.collected_at) > OFFLINE_THRESHOLD;
-        }
-        
-        const card = document.createElement('div');
-        card.className = `fruit-item ${isOffline ? 'offline' : ''}`;
-        
-        let htmlContent = `
-            <div class="fruit-id">${fruit.device_id}</div>
-            <div class="fruit-status ${isRipe ? 'status-ripe' : 'status-unripe'}">${isRipe ? '成熟' : '生长'}(${matPercent}%)</div>
-            <div class="fruit-data">${fruit.sugar_brix.toFixed(1)} <small>Brix</small></div>
+        if (isRipe) ripeCount += 1;
+        if (isOffline) offlineCount += 1;
+
+        const card = document.createElement('button');
+        card.type = 'button';
+        card.className = `device-card ${isOffline ? 'offline' : ''}`;
+        if (fruit.device_id === window.currentSelectedFruitId) card.classList.add('active');
+
+        const statusClass = isOffline ? 'offline' : (isRipe ? 'good' : 'warn');
+        const statusText = isOffline ? '离线' : (isRipe ? '成熟' : '生长期');
+
+        card.innerHTML = `
+            <div class="device-row">
+                <span class="device-id">${fruit.device_id}</span>
+                <span class="status-pill ${statusClass}">${statusText}</span>
+            </div>
+            <div class="device-meta">
+                <span>糖度<strong>${brix.toFixed(1)}</strong></span>
+                <span>成熟度<strong>${percent}%</strong></span>
+            </div>
+            <div class="progress-track">
+                <div class="progress-bar" style="width:${Math.min(percent, 120)}%"></div>
+            </div>
         `;
-        
-        if (isOffline) {
-            htmlContent += `<span class="fruit-offline-alert">⚠️ 超时未更新</span>`;
-        }
-        
-        card.innerHTML = htmlContent;
 
-        card.onclick = () => {
-            document.querySelectorAll('.fruit-item').forEach(el => el.classList.remove('active'));
+        card.addEventListener('click', () => {
+            document.querySelectorAll('.device-card').forEach(el => el.classList.remove('active'));
             card.classList.add('active');
             window.currentSelectedFruitId = fruit.device_id;
-            if(window.reloadAllChartsData) window.reloadAllChartsData();
-            if(window.resetIdleTimer) window.resetIdleTimer();
-        };
+            if (window.reloadAllChartsData) window.reloadAllChartsData();
+            if (window.resetIdleTimer) window.resetIdleTimer();
+        });
+
         container.appendChild(card);
     });
-    
-    document.getElementById('fruit-summary').innerText = `总计: ${fruitList.length} | 已熟: ${ripeCount}`;
+
+    updateDashboardStats({
+        total: list.length,
+        online: list.length - offlineCount,
+        offline: offlineCount,
+        ripe: ripeCount
+    });
 }
+
+function updateDashboardStats({ total = 0, online = 0, offline = 0, ripe = 0, alerts = null }) {
+    const summary = document.getElementById('fruit-summary');
+    if (summary) summary.innerText = `总数 ${total} · 成熟 ${ripe}`;
+    const onlineEl = document.getElementById('stat-online');
+    const offlineEl = document.getElementById('stat-offline');
+    const ripeEl = document.getElementById('stat-ripe');
+    const alertsEl = document.getElementById('stat-alerts');
+    if (onlineEl) onlineEl.innerText = online;
+    if (offlineEl) offlineEl.innerText = offline;
+    if (ripeEl) ripeEl.innerText = ripe;
+    if (alertsEl && alerts !== null) alertsEl.innerText = alerts;
+}
+
+function renderVisionGallery(dataList) {
+    const container = document.getElementById('vision-gallery-container');
+    const count = document.getElementById('vision-count');
+    if (!container) return;
+
+    const list = Array.isArray(dataList) ? dataList : [];
+    if (count) count.innerText = `${list.length} 张`;
+    container.innerHTML = '';
+
+    if (!list.length) {
+        container.innerHTML = '<div class="empty-state">暂无视觉识别记录</div>';
+        return;
+    }
+
+    list.forEach((item) => {
+        const div = document.createElement('article');
+        div.className = 'vision-item';
+        const qualityError = item.quality === 'N/A' || item.quality === -1;
+        const qualityText = qualityError ? '推理失败' : `等级 ${item.quality}`;
+        div.innerHTML = `
+            <div class="vision-image-wrap">
+                <img src="${item.imgUrl}" alt="视觉识别图片" loading="lazy">
+            </div>
+            <div class="vision-info">
+                <div class="vision-quality">
+                    <span>${item.deviceId || '视觉样本'}</span>
+                    <span class="quality-score ${qualityError ? 'error' : ''}">${qualityText}</span>
+                </div>
+                <div class="vision-time">${item.time}</div>
+            </div>
+        `;
+
+        const img = div.querySelector('img');
+        img.addEventListener('click', () => openVisionPreview(item.imgUrl, `${item.deviceId || ''} ${qualityText} · ${item.time}`));
+        img.addEventListener('error', () => {
+            div.querySelector('.vision-image-wrap').innerHTML = '<div class="empty-state">图片加载失败</div>';
+        });
+        container.appendChild(div);
+    });
+
+    requestAnimationFrame(() => {
+        container.scrollLeft = container.scrollWidth;
+    });
+}
+
+function openVisionPreview(src, caption) {
+    const lightbox = document.getElementById('image-lightbox');
+    const image = document.getElementById('lightbox-image');
+    const text = document.getElementById('lightbox-caption');
+    if (!lightbox || !image || !text) return;
+    image.src = src;
+    text.innerText = caption || '';
+    lightbox.classList.add('open');
+    lightbox.setAttribute('aria-hidden', 'false');
+}
+
+function closeVisionPreview() {
+    const lightbox = document.getElementById('image-lightbox');
+    if (!lightbox) return;
+    lightbox.classList.remove('open');
+    lightbox.setAttribute('aria-hidden', 'true');
+}
+
+window.closeVisionPreview = closeVisionPreview;
+
+document.addEventListener('DOMContentLoaded', () => {
+    initCharts();
+    setupHorizontalScroll('vision-gallery-container');
+    renderVisionGallery([]);
+    window.addEventListener('resize', resizeCharts);
+    document.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape') closeVisionPreview();
+    });
+    const lightbox = document.getElementById('image-lightbox');
+    if (lightbox) {
+        lightbox.addEventListener('click', (event) => {
+            if (event.target === lightbox) closeVisionPreview();
+        });
+    }
+});

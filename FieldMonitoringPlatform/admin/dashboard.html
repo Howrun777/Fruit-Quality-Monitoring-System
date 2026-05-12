@@ -2,628 +2,185 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>樱桃园大屏 - SmartCherry</title>
-    <!-- 引入 ECharts -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>水果品质监测后台 - SmartCherry</title>
     <script src="../assets/libs/echarts.min.js"></script>
     <link rel="stylesheet" href="css/style.css">
-    <style>
-        .dashboard-container { display: flex; height: 100vh; background-color: var(--bg-color); overflow: hidden; color: var(--text-main);}
-        
-        .top-navbar {
-            position: absolute; top: 0; left: 0; width: 100%; height: 60px;
-            background: rgba(139, 24, 32, 0.95); backdrop-filter: blur(10px);
-            color: white; display: flex; justify-content: space-between;
-            align-items: center; padding: 0 15px; z-index: 1000;
-            box-shadow: 0 4px 15px rgba(139, 24, 32, 0.15);
-            flex-wrap: wrap;
-        }
-        .top-navbar .nav-title {
-            font-size: 1rem; font-weight: 800; letter-spacing: 0.5px;
-            display: flex; align-items: center; gap: 8px;
-        }
-        .top-navbar .nav-center {
-            display: flex; align-items: center; gap: 10px;
-        }
-        .top-navbar .nav-right {
-            display: flex; align-items: center; gap: 8px;
-        }
-        .logout-btn { background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.3); color: white; padding: 6px 15px; border-radius: 6px; cursor: pointer; transition: 0.3s; font-weight: 600; font-size: 0.85rem;}
-        .logout-btn:hover { background: rgba(226,75,74,0.9); border-color: transparent; }
-        
-        .main-content {
-            margin-top: 60px; display: flex; width: 100%;
-            height: calc(100vh - 60px); padding: 15px; gap: 15px;
-        }
-
-        /* 左侧40%，右侧60% */
-        .left-panel {
-            flex: 4;
-            min-width: 300px;
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-            background: white;
-            border-radius: 12px;
-            padding: 12px;
-            box-shadow: 0 4px 20px rgba(217, 56, 67, 0.05);
-        }
-
-        .right-panel {
-            flex: 6; display: grid;
-            grid-template-columns: 1fr 1fr;
-            grid-auto-rows: minmax(320px, 1fr);
-            gap: 12px;
-            overflow-y: auto;
-        }
-        .card { background: white; border-radius: 12px; padding: 12px; display: flex; flex-direction: column; position: relative; box-shadow: 0 4px 20px rgba(217, 56, 67, 0.04); border: 1px solid rgba(217,56,67,0.05); min-width: 0; overflow: hidden;}
-        .right-panel .card { padding: 8px; }
-
-        /* 标题带炫酷指示条 */
-        .card-title { font-size: 0.9rem; font-weight: 700; margin-bottom: 5px; color: var(--text-main); display: flex; align-items: center; gap: 8px; flex-shrink: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;}
-        .card-title::before { content: ''; display: inline-block; width: 4px; height: 14px; background: var(--primary-color); border-radius: 2px; flex-shrink: 0;}
-        
-        /* 统计徽章 */
-        .summary-badge { background: #FDEEEF; color: var(--primary-color); padding: 3px 10px; border-radius: 12px; font-size: 0.8rem; font-weight: bold; border: 1px solid #F7C1C1;}
-
-        /* 时间刻度按钮美化 */
-        .scale-control { position: absolute; top: 8px; right: 10px; display: flex; align-items: center; gap: 8px; background: #FFF9F9; border: 1px solid #F7C1C1; border-radius: 6px; padding: 4px; z-index: 10; box-shadow: 0 2px 5px rgba(0,0,0,0.02);}
-        .scale-control button { background: white; border: 1px solid #F7C1C1; cursor: pointer; padding: 4px 12px; border-radius: 4px; font-size: 0.75rem; color: var(--text-muted); font-weight: bold; transition: 0.2s; white-space: nowrap;}
-        .scale-control button:hover { background: var(--primary-color); color: white; border-color: var(--primary-color);}
-        .scale-control span { font-size: 0.7rem; color: #475569; min-width: 75px; text-align: center; font-weight: 600; white-space: nowrap;}
-
-        .chart-container { flex: 1; width: 100%; min-height: 0; }
-        
-        /* 顶部区域：设备卡片横向走廊 */
-        .scroll-section {
-            flex-shrink: 0;
-        }
-
-        .fruit-scroll-container {
-            display: flex;
-            flex-wrap: nowrap;
-            overflow-x: auto;
-            overflow-y: hidden;
-            gap: 12px;
-            padding: 10px 5px;
-            max-height: 140px;
-            align-items: flex-start;
-        }
-
-        /* 横向滚动条样式 - 设备卡片 */
-        .fruit-scroll-container::-webkit-scrollbar {
-            height: 6px;
-        }
-        .fruit-scroll-container::-webkit-scrollbar-track {
-            background: var(--bg-color);
-            border-radius: 3px;
-        }
-        .fruit-scroll-container::-webkit-scrollbar-thumb {
-            background: var(--primary-color);
-            border-radius: 3px;
-        }
-        .fruit-scroll-container::-webkit-scrollbar-thumb:hover {
-            background: var(--primary-dark);
-        }
-
-        /* 设备卡片样式 - 横向排列优化 */
-        .fruit-item {
-            flex-shrink: 0;
-            width: 120px;
-            border: 2px solid #e2e8f0;
-            border-radius: 10px;
-            padding: 10px 8px;
-            text-align: center;
-            cursor: pointer;
-            background: #ffffff;
-            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-            box-shadow: 0 2px 8px rgba(0,0,0,0.02);
-        }
-        .fruit-item:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 8px 15px rgba(217, 56, 67, 0.15);
-            border-color: var(--primary-color);
-        }
-        .fruit-item.active {
-            border: 2px solid var(--primary-color);
-            background: #FDEEEF;
-            box-shadow: 0 4px 12px rgba(217, 56, 67, 0.2);
-        }
-
-        .fruit-item.offline {
-            border: 2px dashed #94A3B8;
-            background: #F8FAFC;
-            opacity: 0.8;
-        }
-        .fruit-item.offline:hover {
-            border-color: #64748B;
-            box-shadow: 0 8px 15px rgba(0,0,0,0.1);
-        }
-        .fruit-item.offline.active {
-            border: 3px solid #64748B;
-            background: #E2E8F0;
-        }
-
-        .fruit-offline-alert {
-            font-size: 0.7rem;
-            color: #64748B;
-            font-weight: 800;
-            display: block;
-            margin-top: 4px;
-            animation: blink 2s infinite;
-        }
-
-        .fruit-id {
-            font-weight: 800;
-            font-size: 0.9rem;
-            color: #1e293b;
-            margin-bottom: 5px;
-        }
-        .fruit-status {
-            font-size: 0.75rem;
-            font-weight: bold;
-            padding: 2px 6px;
-            border-radius: 10px;
-            display: inline-block;
-        }
-        .fruit-data {
-            font-size: 1.1rem;
-            color: var(--primary-dark);
-            margin-top: 5px;
-            font-weight: 800;
-        }
-        .fruit-data small {
-            font-size: 0.65rem;
-            color: #94a3b8;
-            font-weight: 600;
-        }
-
-        .status-ripe {
-            background: var(--primary-color);
-            color: white;
-        }
-        .status-unripe {
-            background: #fef9c3;
-            color: #ca8a04;
-        }
-
-        /* 中部区域：糖度图表 */
-        .chart-section {
-            flex: 1;
-            min-height: 150px;
-            display: flex;
-            flex-direction: column;
-            position: relative;
-            overflow: hidden;
-        }
-
-        /* 底部区域：AI视觉快照走廊 - 与图表等高 */
-        .vision-section {
-            flex: 1;
-            min-height: 150px;
-            display: flex;
-            flex-direction: column;
-            overflow: hidden;
-        }
-
-        .vision-gallery {
-            flex: 1;
-            display: flex;
-            flex-wrap: nowrap;
-            overflow-x: auto;
-            overflow-y: hidden;
-            gap: 8px;
-            padding: 6px 4px;
-            min-height: 240px;
-            max-height: 300px;
-            background: #FFF9F9;
-            border: 1px solid #F7C1C1;
-            border-radius: 8px;
-        }
-
-        /* 横向滚动条样式 - 图片走廊 */
-        .vision-gallery::-webkit-scrollbar {
-            height: 6px;
-        }
-        .vision-gallery::-webkit-scrollbar-track {
-            background: var(--bg-color);
-            border-radius: 3px;
-        }
-        .vision-gallery::-webkit-scrollbar-thumb {
-            background: var(--primary-color);
-            border-radius: 3px;
-        }
-        .vision-gallery::-webkit-scrollbar-thumb:hover {
-            background: var(--primary-dark);
-        }
-
-        /* 修改图片走廊单项容器，取消 flex 布局改用 block */
-        .vision-item {
-            flex-shrink: 0;
-            display: block;
-            height: 100%;
-            text-align: center; /* 统一内部居中 */
-            max-width: 240px;
-        }
-
-        /* 修改图片本身的样式，确保比例且居中 */
-        .vision-item img {
-            height: calc(100% - 35px);
-            min-height: 120px;
-            max-height: 240px;
-            width: auto;
-            aspect-ratio: 1 / 1; /* 强制正方形 */
-            object-fit: cover;   /* 保证内容不变形 */
-            border-radius: 6px;
-            border: 2px solid #F7C1C1;
-            background: #f0f0f0;
-            display: block;
-            margin: 0 auto; /* block 居中 */
-            transition: transform 0.2s, border-color 0.2s;
-        }
-
-        .vision-item img:hover {
-            transform: scale(1.05);
-            border-color: var(--primary-color);
-        }
-
-        /* 强制文字标签块级显示，使其自动换行上下堆叠 */
-        .vision-item .quality-tag,
-        .vision-item .time-tag {
-            display: block;
-            line-height: 1.1;
-        }
-
-        .vision-item .quality-tag {
-            margin-top: 4px;
-            font-size: 0.8rem;
-            font-weight: 700;
-            color: var(--primary-color);
-        }
-
-        .vision-item .time-tag {
-            font-size: 1.0rem;
-            color: var(--text-muted);
-            margin-top: 2px;
-        }
-        
-        /* 顶部控制台精细化 */
-        .switch-btn { background: rgba(255,255,255,0.15); color: white; border: 1px solid rgba(255,255,255,0.2); padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 0.85rem; font-weight: 600; transition: 0.2s;}
-        .switch-btn:hover { background: white; color: var(--primary-dark); }
-        .refresh-btn { background: var(--primary-color) !important; border-color: var(--primary-color) !important; box-shadow: 0 0 10px rgba(217, 56, 67, 0.4);}
-        .refresh-btn:hover { background: #A31B24 !important; color: white !important;}
-        
-        .clock-container { text-align: right; margin-right: 20px; line-height: 1.1; display: flex; flex-direction: column; align-items: flex-end;}
-        .clock-date { font-size: 0.75rem; color: #FDEEEF; font-weight: 600;}
-        .clock-time { font-size: 1.1rem; font-weight: 800; font-family: 'Consolas', monospace; letter-spacing: 1px;}
-        .last-update { font-size: 0.7rem; color: #f1c40f; margin-right: 10px; font-weight: bold; background: rgba(0,0,0,0.2); padding: 3px 6px; border-radius: 4px; }
-
-        /* ============================================
-           响应式适配 - 手机端和平板
-           ============================================ */
-
-        @media screen and (max-width: 1024px) {
-            .main-content {
-                flex-direction: column;
-                padding: 10px;
-                gap: 10px;
-                overflow-y: auto;
-                height: auto;
-                min-height: calc(100vh - 60px);
-            }
-
-            .left-panel, .right-panel {
-                min-width: 100%;
-                width: 100%;
-            }
-
-            .left-panel {
-                overflow-y: visible;
-                flex-shrink: 0;
-            }
-
-            .right-panel {
-                display: grid;
-                grid-template-columns: 1fr;
-                grid-auto-rows: minmax(250px, 1fr);
-                gap: 10px;
-                overflow-y: auto;
-            }
-
-            .right-panel .card {
-                flex-shrink: 0;
-            }
-
-            .scale-control span {
-                min-width: 65px;
-                font-size: 0.65rem;
-            }
-
-            .scale-control button {
-                padding: 3px 8px;
-            }
-        }
-
-        @media screen and (max-width: 768px) {
-            .top-navbar {
-                height: auto;
-                min-height: 50px;
-                padding: 8px 10px;
-                flex-wrap: wrap;
-                justify-content: center;
-                gap: 8px;
-            }
-
-            .top-navbar .nav-title {
-                font-size: 0.9rem;
-                width: 100%;
-                justify-content: center;
-            }
-
-            .top-navbar .nav-center,
-            .top-navbar .nav-right {
-                flex-wrap: wrap;
-                justify-content: center;
-            }
-
-            .main-content {
-                margin-top: 60px;
-                height: auto;
-                min-height: calc(100vh - 60px);
-                overflow-y: auto;
-            }
-
-            .left-panel {
-                padding: 10px;
-                gap: 10px;
-                overflow-y: visible;
-            }
-
-            .scroll-section,
-            .chart-section,
-            .vision-section {
-                flex-shrink: 0;
-                overflow: visible;
-            }
-
-            .fruit-scroll-container {
-                max-height: 100px;
-            }
-
-            .fruit-item {
-                width: 100px;
-                padding: 8px 6px;
-            }
-
-            .right-panel .card {
-                flex-shrink: 0;
-            }
-
-            .card-title {
-                font-size: 0.85rem;
-            }
-
-            .scale-control {
-                top: 5px;
-                right: 5px;
-                gap: 4px;
-                padding: 3px;
-            }
-
-            .scale-control span {
-                min-width: 55px;
-                font-size: 0.6rem;
-            }
-
-            .scale-control button {
-                padding: 2px 6px;
-                font-size: 0.6rem;
-            }
-
-            .clock-container {
-                display: none;
-            }
-
-            .hide-mobile {
-                display: none !important;
-            }
-        }
-
-        @media screen and (max-width: 480px) {
-            .main-content {
-                padding: 8px;
-                gap: 8px;
-            }
-
-            .left-panel {
-                padding: 8px;
-                gap: 8px;
-            }
-
-            .top-navbar {
-                padding: 6px 8px;
-            }
-
-            .switch-btn {
-                padding: 4px 8px;
-                font-size: 0.75rem;
-            }
-
-            .right-panel .card {
-                flex-shrink: 0;
-                padding: 8px 6px;
-            }
-
-            .fruit-scroll-container {
-                max-height: 80px;
-            }
-
-            .vision-gallery {
-                min-height: 60px;
-                max-height: 70px;
-                gap: 6px;
-                padding: 4px 3px;
-            }
-
-            .vision-item {
-                max-width: 70px;
-            }
-
-            .vision-item img {
-                height: calc(100% - 28px);
-                min-height: 40px;
-                max-height: 45px;
-            }
-
-            .vision-item .quality-tag {
-                font-size: 0.55rem;
-            }
-
-            .vision-item .time-tag {
-                font-size: 0.45rem;
-            }
-
-            .scroll-section,
-            .chart-section,
-            .vision-section {
-                flex-shrink: 0;
-                min-height: auto;
-            }
-        }
-
-        /* 右侧面板滚动条优化 - 红/粉主题 */
-        .right-panel::-webkit-scrollbar {
-            width: 8px;
-        }
-        .right-panel::-webkit-scrollbar-track {
-            background: #FFF5F5;
-            border-radius: 4px;
-            margin: 4px 0;
-        }
-        .right-panel::-webkit-scrollbar-thumb {
-            background: linear-gradient(180deg, var(--primary-color), #E86B6B);
-            border-radius: 4px;
-            border: 2px solid #FFF5F5;
-        }
-        .right-panel::-webkit-scrollbar-thumb:hover {
-            background: linear-gradient(180deg, var(--primary-dark), var(--primary-color));
-        }
-        .right-panel::-webkit-scrollbar-corner {
-            background: #FFF5F5;
-        }
-
-        /* Firefox 滚动条支持 */
-        .right-panel {
-            scrollbar-width: thin;
-            scrollbar-color: var(--primary-color) #FFF5F5;
-        }
-    </style>
+    <link rel="stylesheet" href="css/dashboard.css">
 </head>
-<body>
-    <div class="top-navbar">
-        <div class="nav-title">
-            <span>🍒</span>
-            <span class="hide-mobile">樱桃园 IoT 监控大屏</span>
-        </div>
-        <div class="nav-center">
-            <button class="switch-btn" onclick="switchField(-1)">◀</button>
-            <div style="font-size: 1rem; min-width: 120px; text-align: center; font-weight: 700;" id="field-info-display">加载中...</div>
-            <button class="switch-btn" onclick="switchField(1)">▶</button>
-        </div>
-        <div class="nav-right">
-            <button class="switch-btn refresh-btn" onclick="forceRefresh()">↻</button>
-            <div class="clock-container">
-                <div class="clock-date" id="sys-date">----/--/--</div>
-                <div class="clock-time" id="sys-time">--:--:--</div>
+<body class="dashboard-page">
+    <header class="dashboard-header">
+        <div class="brand-block">
+            <div class="brand-mark">FQ</div>
+            <div>
+                <div class="brand-title">FruitQuality Monitoring</div>
+                <div class="brand-subtitle">冷链水果品质监测后台</div>
             </div>
-            <button class="logout-btn hide-mobile" onclick="logout()">注销</button>
         </div>
-    </div>
 
-    <div class="dashboard-container">
-        <div class="main-content">
-            <!-- 左侧 -->
-            <div class="left-panel">
-                <!-- 顶部区域：设备状态卡片横向走廊 -->
-                <div class="scroll-section">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; flex-wrap: wrap; gap: 5px;">
-                        <div class="card-title" style="margin: 0; font-size: 0.9rem;">阵列实时状态</div>
-                        <div class="summary-badge" id="fruit-summary">总计: 0 | 已熟: 0</div>
+        <div class="field-switcher" aria-label="产区切换">
+            <button class="icon-btn" type="button" onclick="switchField(-1)" title="上一个产区">‹</button>
+            <div class="field-pill">
+                <span class="field-label">当前产区</span>
+                <strong id="field-info-display">加载中...</strong>
+            </div>
+            <button class="icon-btn" type="button" onclick="switchField(1)" title="下一个产区">›</button>
+        </div>
+
+        <div class="header-actions">
+            <div class="refresh-state" id="last-update-text">等待刷新</div>
+            <div class="clock-block">
+                <span id="sys-date">----/--/--</span>
+                <strong id="sys-time">--:--:--</strong>
+            </div>
+            <button class="primary-action" type="button" onclick="forceRefresh()">刷新</button>
+            <button class="ghost-action" type="button" onclick="logout()">退出</button>
+        </div>
+    </header>
+
+    <main class="dashboard-shell">
+        <section class="hero-panel">
+            <div class="hero-copy">
+                <span class="eyebrow">实时监控</span>
+                <h1>樱桃品质与环境风险总览</h1>
+                <p>融合糖度、成熟度、温湿度、光照、腐败度与 AI 视觉结果，辅助冷链运输中的品质判断与应急响应。</p>
+            </div>
+            <div class="hero-status-grid">
+                <article class="metric-card online">
+                    <span>在线设备</span>
+                    <strong id="stat-online">0</strong>
+                    <em>30 分钟内有数据</em>
+                </article>
+                <article class="metric-card muted">
+                    <span>离线设备</span>
+                    <strong id="stat-offline">0</strong>
+                    <em>需要检查链路</em>
+                </article>
+                <article class="metric-card ripe">
+                    <span>成熟设备</span>
+                    <strong id="stat-ripe">0</strong>
+                    <em>成熟度 ≥ 100%</em>
+                </article>
+                <article class="metric-card warning">
+                    <span>腐败预警</span>
+                    <strong id="stat-alerts">0</strong>
+                    <em>腐败度 > 60%</em>
+                </article>
+            </div>
+        </section>
+
+        <section class="dashboard-grid">
+            <aside class="device-panel panel">
+                <div class="panel-heading">
+                    <div>
+                        <span class="section-kicker">设备矩阵</span>
+                        <h2>采集终端</h2>
                     </div>
-                    <div class="fruit-scroll-container" id="fruit-grid-container">
-                        <div style="padding:20px; color:#999;">正在加载果实数据...</div>
-                    </div>
+                    <span class="compact-badge" id="fruit-summary">总数 0</span>
                 </div>
+                <div class="device-list" id="fruit-grid-container">
+                    <div class="empty-state">正在加载设备数据...</div>
+                </div>
+            </aside>
 
-                <!-- 中部区域：糖度历史折线图 -->
-                <div class="chart-section">
-                    <div class="card-title" id="fruit-history-title">[设备] 糖度历史</div>
-                    <div class="scale-control">
-                        <button onclick="changeScale('sugar', -1)">◀</button>
-                        <span id="text-sugar">刻度: 5分钟</span>
-                        <button onclick="changeScale('sugar', 1)">▶</button>
+            <section class="main-panel">
+                <div class="chart-card panel featured-chart">
+                    <div class="panel-heading">
+                        <div>
+                            <span class="section-kicker">糖度趋势</span>
+                            <h2 id="fruit-history-title">请选择设备</h2>
+                        </div>
+                        <div class="segmented-scale">
+                            <button type="button" onclick="changeScale('sugar', -1)">‹</button>
+                            <span id="text-sugar">5 分钟</span>
+                            <button type="button" onclick="changeScale('sugar', 1)">›</button>
+                        </div>
                     </div>
                     <div class="chart-container" id="fruitHistoryChart"></div>
                 </div>
 
-                <!-- 底部区域：AI视觉快照走廊 -->
-                <div class="vision-section">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; flex-wrap: wrap; gap: 5px;">
-                        <div class="card-title" style="margin: 0; font-size: 0.9rem;">AI 视觉快照</div>
-                        <span style="font-size: 0.7rem; color: var(--text-muted);">最新采集 ↑</span>
+                <div class="vision-card panel">
+                    <div class="panel-heading">
+                        <div>
+                            <span class="section-kicker">AI Vision</span>
+                            <h2>视觉识别记录</h2>
+                        </div>
+                        <span class="compact-badge" id="vision-count">0 张</span>
                     </div>
                     <div class="vision-gallery" id="vision-gallery-container">
-                        <div style="padding: 30px 20px; color: #999; text-align: center; width: 100%;">
-                            暂无快照数据
+                        <div class="empty-state">暂无视觉识别记录</div>
+                    </div>
+                </div>
+            </section>
+
+            <section class="env-panel">
+                <article class="chart-card panel">
+                    <div class="panel-heading">
+                        <div>
+                            <span class="section-kicker">Environment</span>
+                            <h2>温度</h2>
+                        </div>
+                        <div class="segmented-scale">
+                            <button type="button" onclick="changeScale('temp', -1)">‹</button>
+                            <span id="text-temp">5 分钟</span>
+                            <button type="button" onclick="changeScale('temp', 1)">›</button>
                         </div>
                     </div>
-                </div>
-            </div>
-
-            <!-- 右侧 -->
-            <div class="right-panel">
-                <!-- 1. 温度 -->
-                <div class="card">
-                    <div class="card-title">环境温度趋势 (℃)</div>
-                    <div class="scale-control">
-                        <button onclick="changeScale('temp', -1)">◀</button>
-                        <span id="text-temp">刻度: 5分钟</span>
-                        <button onclick="changeScale('temp', 1)">▶</button>
-                    </div>
                     <div class="chart-container" id="tempChart"></div>
-                </div>
-                <!-- 2. 湿度 -->
-                <div class="card">
-                    <div class="card-title">环境湿度趋势 (%)</div>
-                    <div class="scale-control">
-                        <button onclick="changeScale('hum', -1)">◀</button>
-                        <span id="text-hum">刻度: 5分钟</span>
-                        <button onclick="changeScale('hum', 1)">▶</button>
+                </article>
+
+                <article class="chart-card panel">
+                    <div class="panel-heading">
+                        <div>
+                            <span class="section-kicker">Environment</span>
+                            <h2>湿度</h2>
+                        </div>
+                        <div class="segmented-scale">
+                            <button type="button" onclick="changeScale('hum', -1)">‹</button>
+                            <span id="text-hum">5 分钟</span>
+                            <button type="button" onclick="changeScale('hum', 1)">›</button>
+                        </div>
                     </div>
                     <div class="chart-container" id="humChart"></div>
-                </div>
-                <!-- 3. 光照 -->
-                <div class="card">
-                    <div class="card-title">光照强度趋势 (Lux)</div>
-                    <div class="scale-control">
-                        <button onclick="changeScale('light', -1)">◀</button>
-                        <span id="text-light">刻度: 5分钟</span>
-                        <button onclick="changeScale('light', 1)">▶</button>
+                </article>
+
+                <article class="chart-card panel">
+                    <div class="panel-heading">
+                        <div>
+                            <span class="section-kicker">Environment</span>
+                            <h2>光照</h2>
+                        </div>
+                        <div class="segmented-scale">
+                            <button type="button" onclick="changeScale('light', -1)">‹</button>
+                            <span id="text-light">5 分钟</span>
+                            <button type="button" onclick="changeScale('light', 1)">›</button>
+                        </div>
                     </div>
                     <div class="chart-container" id="lightChart"></div>
-                </div>
-                <!-- 4. ✅ 新增：腐败度 -->
-                <div class="card">
-                    <div class="card-title">果实腐败度预测 (%)</div>
-                    <div class="scale-control">
-                        <button onclick="changeScale('spoil', -1)">◀</button>
-                        <span id="text-spoil">刻度: 5分钟</span>
-                        <button onclick="changeScale('spoil', 1)">▶</button>
+                </article>
+
+                <article class="chart-card panel">
+                    <div class="panel-heading">
+                        <div>
+                            <span class="section-kicker">Risk</span>
+                            <h2>腐败度</h2>
+                        </div>
+                        <div class="segmented-scale">
+                            <button type="button" onclick="changeScale('spoil', -1)">‹</button>
+                            <span id="text-spoil">5 分钟</span>
+                            <button type="button" onclick="changeScale('spoil', 1)">›</button>
+                        </div>
                     </div>
                     <div class="chart-container" id="spoilChart"></div>
-                </div>
-            </div>
-        </div>
+                </article>
+            </section>
+        </section>
+    </main>
+
+    <div class="image-lightbox" id="image-lightbox" aria-hidden="true">
+        <button class="lightbox-close" type="button" onclick="closeVisionPreview()" title="关闭">×</button>
+        <img id="lightbox-image" alt="视觉识别大图">
+        <div class="lightbox-caption" id="lightbox-caption"></div>
     </div>
 
     <script src="js/chart.js"></script>
@@ -634,7 +191,11 @@
             document.getElementById('sys-date').innerText = `${now.getFullYear()}/${String(now.getMonth()+1).padStart(2,'0')}/${String(now.getDate()).padStart(2,'0')}`;
             document.getElementById('sys-time').innerText = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}:${String(now.getSeconds()).padStart(2,'0')}`;
         }, 1000);
-        function logout() { document.cookie = "session_id=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;"; window.location.href = "login.html"; }
+
+        function logout() {
+            document.cookie = "session_id=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+            window.location.href = "login.html";
+        }
     </script>
 </body>
 </html>

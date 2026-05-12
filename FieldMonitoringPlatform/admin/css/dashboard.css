@@ -437,7 +437,7 @@ button {
 
 .main-panel {
     display: grid;
-    grid-template-rows: minmax(460px, 1fr) minmax(272px, 0.55fr);
+    grid-template-rows: minmax(460px, 1fr) minmax(330px, 0.62fr);
     gap: 18px;
     min-width: 0;
 }
@@ -475,7 +475,7 @@ button {
     }
 
     .main-panel {
-        grid-template-rows: minmax(540px, 1fr) minmax(300px, 0.5fr);
+        grid-template-rows: minmax(540px, 1fr) minmax(350px, 0.55fr);
         gap: 20px;
     }
 
@@ -523,7 +523,7 @@ button {
 }
 
 .vision-card {
-    min-height: 272px;
+    min-height: 330px;
     overflow: hidden;
     display: flex;
     flex-direction: column;
@@ -534,24 +534,30 @@ button {
     display: flex;
     gap: 12px;
     overflow-x: auto;
+    overflow-y: hidden;
     padding: 8px 18px 18px;
-    min-height: 190px;
+    min-height: 244px;
+    align-items: stretch;
 }
 
 .vision-item {
-    flex: 0 0 170px;
+    flex: 0 0 188px;
     border: 1px solid var(--line);
     border-radius: 8px;
     overflow: hidden;
     background: #fff;
     box-shadow: 0 8px 18px rgba(16, 24, 40, 0.04);
+    display: flex;
+    flex-direction: column;
+    min-height: 230px;
 }
 
 .vision-image-wrap {
     width: 100%;
-    aspect-ratio: 1 / 1;
+    aspect-ratio: 4 / 3;
     background: #f1f5f9;
     overflow: hidden;
+    flex: 0 0 auto;
 }
 
 .vision-image-wrap img {
@@ -568,7 +574,11 @@ button {
 }
 
 .vision-info {
-    padding: 10px;
+    padding: 10px 11px 12px;
+    min-height: 66px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
 }
 
 .vision-quality {
@@ -787,6 +797,7 @@ button {
     }
 
     .vision-item {
-        flex-basis: 145px;
+        flex-basis: 168px;
+        min-height: 214px;
     }
 }

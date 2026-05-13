@@ -197,18 +197,20 @@ wire        jpeg_data_en;
 wire [31:0] jpeg_size;
 wire        capture_done_raw;
 
-jpeg_capture u_jpeg (
-    .sys_clk        (clk_25m),
-    .sys_rst_n      (rst_n),
-    .capture_req    (capture_req),
-
-    .cam_wr_en      (cam_wr_en),
-    .cam_data       (cam_data),
-	 .ov5640_vsync   (ov5640_vsync),
-    .jpeg_data      (jpeg_data),
-    .jpeg_data_en   (jpeg_data_en),
-    .jpeg_size      (jpeg_size),
-    .capture_done   (capture_done_raw)
+ov5640_jpeg_capture u_capture (
+    .sys_clk      (sys_clk),
+    .sys_rst_n    (rst_n),
+    .capture_req  (capture_req),
+    .ov5640_pclk  (ov5640_pclk),
+    .ov5640_href  (ov5640_href),
+    .ov5640_vsync (ov5640_vsync),
+    .ov5640_data  (ov5640_data),
+    .sccb_scl     (),
+    .sccb_sda     (),
+    .jpeg_data    (jpeg_data),
+    .jpeg_data_en (jpeg_data_en),
+    .jpeg_size    (jpeg_size_pclk),
+    .capture_done (capture_done_pclk)
 );
 
 //======================================================//

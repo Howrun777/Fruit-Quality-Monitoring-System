@@ -34,7 +34,8 @@
 #define PROTOCOL_HEADER_SIZE    2
 #define PROTOCOL_MAX_ID_LEN     32
 #define PROTOCOL_MAX_TOKEN_LEN  32    // 修复：新协议Token为32字节
-#define PROTOCOL_MAX_JPEG_SIZE  (100 * 1024) 
+#define PROTOCOL_MAX_JPEG_SIZE  (100 * 1024)
+#define PROTOCOL_FIXED_PACKET_OVERHEAD (PROTOCOL_HEADER_SIZE + PROTOCOL_MAX_ID_LEN + PROTOCOL_MAX_TOKEN_LEN + 4 + 4 + 2)
 
 // ============================================================
 // Device Configuration (设备标识)

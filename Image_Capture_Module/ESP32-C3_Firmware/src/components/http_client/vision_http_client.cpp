@@ -4,6 +4,7 @@
  */
 
 #include "vision_http_client.h"
+#include "esp_err.h"
 #include "esp_http_client.h"
 #include <string.h>
 #include <stdio.h>
@@ -147,7 +148,7 @@ void vision_http_upload_async(const vision_upload_request_t* request,
         return;
     }
 
-    vision_upload_response_t response;
+    vision_upload_response_t response = {};
     esp_err_t err = vision_http_upload(request, &response);
 
     if (callback) {
@@ -228,7 +229,8 @@ static esp_err_t http_event_handler(esp_http_client_event_t* evt)
             break;
         case HTTP_EVENT_ON_DATA:
             ESP_LOGD(TAG, "HTTP_EVENT_ON_DATA, len=%d", evt->data_len);
-            if (s_response_buffer != nullptr && s_response_capacity > 0 && evt->data != nullptr) {
+            if (s_response_buffer != nullptr && s_response_capacity > 0 && evt->data != nullptr &&
+                s_response_len + 1 < s_response_capacity) {
                 size_t available = s_response_capacity - s_response_len - 1;
                 size_t copy_len = ((size_t)evt->data_len < available) ? (size_t)evt->data_len : available;
                 if (copy_len > 0) {

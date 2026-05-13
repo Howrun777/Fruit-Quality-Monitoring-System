@@ -66,6 +66,7 @@ set_global_assignment -name PARTITION_COLOR 16764057 -section_id Top
 # 系统时钟与复位按键
 set_location_assignment PIN_E1 -to sys_clk
 set_location_assignment PIN_M15 -to sys_rst_n
+set_location_assignment PIN_M2 -to key1
 
 # -------------------------------------------------------------
 # Pin Assignments - UART (USB转串口)
@@ -108,6 +109,7 @@ set_location_assignment PIN_G15 -to ov5640_data[0]
 
 # Camera control signals
 set_location_assignment PIN_M16 -to ov5640_pclk
+set_location_assignment PIN_D15 -to ov5640_xclk
 set_location_assignment PIN_C16 -to ov5640_vsync
 set_location_assignment PIN_J13 -to ov5640_href
 set_location_assignment PIN_P15 -to sccb_scl
@@ -181,9 +183,6 @@ set_global_assignment -name QIP_FILE ../ip_core/ddio_out/ddio_out.qip
 set_global_assignment -name VERILOG_FILE ../ip_core/clk_gen/clk_gen.v
 set_global_assignment -name QIP_FILE ../ip_core/clk_gen/clk_gen.qip
 set_global_assignment -name VERILOG_FILE ../image_capture_top.v
-set_global_assignment -name VERILOG_FILE ../../project/ip_core/fifo_data/fifo_data.v
-set_global_assignment -name VERILOG_FILE ../../project/ip_core/ddio_out/ddio_out.v
-set_global_assignment -name VERILOG_FILE ../../project/ip_core/clk_gen/clk_gen.v
 set_global_assignment -name VERILOG_FILE ../spi_master/spi_master_tx.v
 set_global_assignment -name VERILOG_FILE ../uart_cmd_parser/uart_rx.v
 set_global_assignment -name VERILOG_FILE ../uart_cmd_parser/uart_cmd_parser.v

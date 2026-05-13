@@ -7,6 +7,8 @@
 #include <WiFi.h>  
 #include <freertos/FreeRTOS.h>
 #include <freertos/task.h>
+#include <esp_err.h>
+#include <esp_heap_caps.h>
 #include <esp_log.h>
 #include "include/config.h"
 #include "components/spi_slave/spi_slave.h"
@@ -320,7 +322,7 @@ static void debug_print_packet(const parsed_packet_t* packet) {
     ESP_LOGI(TAG, "Token     : %s", packet->token);
     ESP_LOGI(TAG, "Timestamp : %s", packet->timestamp);
     ESP_LOGI(TAG, "JPEG Size : %u bytes", (unsigned)packet->file_size);
-    ESP_LOGI(TAG, "Packet Size: %u bytes", (unsigned)(packet->file_size + 78));
+    ESP_LOGI(TAG, "Packet Size: %u bytes", (unsigned)(packet->file_size + PROTOCOL_FIXED_PACKET_OVERHEAD));
     ESP_LOGI(TAG, "Valid     : %s", packet->valid ? "true" : "false");
     ESP_LOGI(TAG, "=======================================");
 }

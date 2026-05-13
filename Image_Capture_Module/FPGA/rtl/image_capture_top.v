@@ -311,7 +311,7 @@ sdram_top u_sdram (
     .wr_fifo_wr_data ({8'd0, jpeg_data}), 
     .sdram_wr_b_addr (24'd0),          
     .sdram_wr_e_addr (24'hFFFFFF),     
-    .wr_burst_len    (10'd1),
+    .wr_burst_len    (10'd8),
     .wr_rst          (wr_rst_req),     
     
     .rd_fifo_rd_clk  (sys_clk),        
@@ -320,7 +320,7 @@ sdram_top u_sdram (
     .rd_fifo_num     (rd_fifo_num),    
     .sdram_rd_b_addr (24'd0),          
     .sdram_rd_e_addr (24'hFFFFFF),     
-    .rd_burst_len    (10'd1),
+    .rd_burst_len    (10'd8),
     .rd_rst          (rd_rst_req),     
     
     .read_valid      (sys_state == SYS_SPI_TX),

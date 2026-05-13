@@ -26,7 +26,7 @@ module image_capture_top (
     input  wire        ov5640_vsync,
     input  wire        ov5640_href,
     input  wire        ov5640_pclk,
-    output wire        ov5640_xclk,
+    output wire        cam_mclk,
     output wire        ov5640_rst_n,
     output wire        ov5640_pwdn,
     output wire        sccb_scl,
@@ -74,7 +74,7 @@ clk_gen u_pll (
     .locked (locked)
 );
 
-assign ov5640_xclk  = clk_25m;
+assign cam_mclk     = clk_25m;
 assign ov5640_rst_n = rst_n;
 assign ov5640_pwdn  = 1'b0;
 

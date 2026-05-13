@@ -109,7 +109,7 @@ set_location_assignment PIN_G15 -to ov5640_data[0]
 
 # Camera control signals
 set_location_assignment PIN_M16 -to ov5640_pclk
-set_location_assignment PIN_D15 -to ov5640_xclk
+set_location_assignment PIN_D15 -to cam_mclk
 set_location_assignment PIN_C16 -to ov5640_vsync
 set_location_assignment PIN_J13 -to ov5640_href
 set_location_assignment PIN_P15 -to sccb_scl

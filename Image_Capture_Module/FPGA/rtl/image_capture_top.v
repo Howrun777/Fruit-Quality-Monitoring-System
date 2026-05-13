@@ -25,6 +25,7 @@ module image_capture_top (
     input  wire        ov5640_vsync,
     input  wire        ov5640_href,
     input  wire        ov5640_pclk,
+    output wire        ov5640_xclk,
     output wire        ov5640_rst_n,
     output wire        ov5640_pwdn,
     output wire        sccb_scl,
@@ -56,6 +57,10 @@ clk_gen u_pll (
     .locked (locked)
 );
 
+assign ov5640_xclk  = clk_25m;
+assign ov5640_rst_n = rst_n;
+assign ov5640_pwdn  = 1'b0;
+
 //====================================================================//
 // 2. 串口命令解析与反馈
 //====================================================================//
@@ -63,11 +68,13 @@ wire        cmd_start, cmd_valid;
 wire [255:0] device_id;
 wire [255:0] token;
 wire [31:0] timestamp;
+wire        cmd_error;
 
 uart_cmd_parser u_parser (
     .sys_clk(sys_clk), .sys_rst_n(rst_n), .uart_rx(uart_rx),
     .cmd_start(cmd_start), .cmd_valid(cmd_valid),
-    .device_id(device_id), .token(token), .timestamp(timestamp)
+    .device_id(device_id), .token(token), .timestamp(timestamp),
+    .cmd_error(cmd_error)
 );
 
 buzzer_pwm_ctrl u_buzzer (
@@ -102,7 +109,7 @@ always @(posedge sys_clk or negedge rst_n) begin
     end else begin
         wr_rst_req <= 0; rd_rst_req <= 0;
         case (sys_state)
-            SYS_INIT: if (sdram_init_end) sys_state <= SYS_IDLE;
+            SYS_INIT: if (sdram_init_end && cfg_done) sys_state <= SYS_IDLE;
             SYS_IDLE: begin
                 if (cmd_valid) begin 
                     wr_rst_req <= 1; 
@@ -128,21 +135,13 @@ end
 //====================================================================//
 // 4. Debug LED 状态机 (0亮 1灭)
 //====================================================================//
-reg led2_r, led3_r, led4_r;
+reg led4_r;
 reg [25:0] led4_timer;
 
 always @(posedge sys_clk or negedge rst_n) begin
     if (!rst_n) begin
-        led2_r <= 1; led3_r <= 1; led4_r <= 1; led4_timer <= 0;
+        led4_r <= 1; led4_timer <= 0;
     end else begin
-        // LED 2: 收到指令开始亮起
-        if (cmd_valid) led2_r <= 0;
-        else if (sys_state == SYS_IDLE && led4_timer == 0) led2_r <= 1; // 闲置时熄灭
-        
-        // LED 3: 捕获完成开始亮起
-        if (capture_done) led3_r <= 0;
-        else if (sys_state == SYS_IDLE && led4_timer == 0) led3_r <= 1;
-
         // LED 4: SPI 发送完成 (亮 1 秒钟后，所有灯复位)
         if (spi_done) begin
             led4_r <= 0;
@@ -157,23 +156,22 @@ always @(posedge sys_clk or negedge rst_n) begin
 end
 
 assign led_1 = ~sdram_init_end; // 初始化完成后拉低点亮 (常亮)
-assign led_2 = led2_r;
-assign led_3 = led3_r;
-//assign led_4 = led4_r;
-assign led_4 = cfg_done;
+assign led_2 = ~(sys_state == SYS_CAPTURE);
+assign led_3 = ~(sys_state == SYS_SPI_TX);
+assign led_4 = led4_r;
 //====================================================================//
 // 5. OV5640 摄像头（已修复：加入初始化 + 正确数据流）
 //====================================================================//
 
-wire        cam_wr_en;
-wire [15:0] cam_data;
+wire        cam_wr_en_unused;
+wire [15:0] cam_data_unused;
 wire        cfg_done;
 
 // 摄像头初始化 + 数据输出
 ov5640_top u_ov5640 (
-    .sys_clk        (clk_25m),
+    .sys_clk        (sys_clk),
     .sys_rst_n      (rst_n),
-    .sys_init_done  (1'b1),
+    .sys_init_done  (sdram_init_end),
 
     .ov5640_pclk    (ov5640_pclk),
     .ov5640_href    (ov5640_href),
@@ -185,8 +183,8 @@ ov5640_top u_ov5640 (
     .sccb_scl       (sccb_scl),
     .sccb_sda       (sccb_sda),
 
-    .ov5640_wr_en   (cam_wr_en),
-    .ov5640_data_out(cam_data)
+    .ov5640_wr_en   (cam_wr_en_unused),
+    .ov5640_data_out(cam_data_unused)
 );
 
 //======================================================//
@@ -197,18 +195,20 @@ wire        jpeg_data_en;
 wire [31:0] jpeg_size;
 wire        capture_done_raw;
 
-jpeg_capture u_jpeg (
-    .sys_clk        (clk_25m),
-    .sys_rst_n      (rst_n),
-    .capture_req    (capture_req),
-
-    .cam_wr_en      (cam_wr_en),
-    .cam_data       (cam_data),
-	 .ov5640_vsync   (ov5640_vsync),
-    .jpeg_data      (jpeg_data),
-    .jpeg_data_en   (jpeg_data_en),
-    .jpeg_size      (jpeg_size),
-    .capture_done   (capture_done_raw)
+ov5640_jpeg_capture u_jpeg (
+    .sys_clk      (sys_clk),
+    .sys_rst_n    (rst_n),
+    .capture_req  (capture_req),
+    .ov5640_pclk  (ov5640_pclk),
+    .ov5640_href  (ov5640_href),
+    .ov5640_vsync (ov5640_vsync),
+    .ov5640_data  (ov5640_data),
+    .sccb_scl     (),
+    .sccb_sda     (),
+    .jpeg_data    (jpeg_data),
+    .jpeg_data_en (jpeg_data_en),
+    .jpeg_size    (jpeg_size),
+    .capture_done (capture_done_raw)
 );
 
 //======================================================//
@@ -231,7 +231,7 @@ wire capture_done = cap_done_d2;
 // 6. SDRAM 控制器 (存图)
 //====================================================================//
 wire       spi_rd_en;
-wire [7:0] spi_rd_data;
+wire [15:0] sdram_rd_data;
 wire [9:0] rd_fifo_num;
 
 sdram_top u_sdram (
@@ -244,19 +244,20 @@ sdram_top u_sdram (
     .wr_fifo_wr_data ({8'd0, jpeg_data}), 
     .sdram_wr_b_addr (24'd0),          
     .sdram_wr_e_addr (24'hFFFFFF),     
-    .wr_burst_len    (10'd512),        
+    .wr_burst_len    (10'd1),
     .wr_rst          (wr_rst_req),     
     
     .rd_fifo_rd_clk  (sys_clk),        
     .rd_fifo_rd_req  (spi_rd_en),      
-    .rd_fifo_rd_data (spi_rd_data),    
+    .rd_fifo_rd_data (sdram_rd_data),
     .rd_fifo_num     (rd_fifo_num),    
     .sdram_rd_b_addr (24'd0),          
     .sdram_rd_e_addr (24'hFFFFFF),     
-    .rd_burst_len    (10'd512),        
+    .rd_burst_len    (10'd1),
     .rd_rst          (rd_rst_req),     
     
-    .read_valid      (sys_state == SYS_SPI_TX), 
+    .read_valid      (sys_state == SYS_SPI_TX),
+    .pingpang_en     (1'b0),
     .init_end        (sdram_init_end),
     
     .sdram_clk(sdram_clk), .sdram_cke(sdram_cke), .sdram_cs_n(sdram_cs_n),
@@ -270,18 +271,23 @@ sdram_top u_sdram (
 //====================================================================//
 reg [31:0] saved_jpeg_size;
 
-always @(posedge sys_clk) if (capture_done) saved_jpeg_size <= jpeg_size;
+always @(posedge sys_clk or negedge rst_n) begin
+    if (!rst_n)
+        saved_jpeg_size <= 32'd0;
+    else if (capture_done)
+        saved_jpeg_size <= jpeg_size;
+end
 
 spi_master_tx u_spi (
     .sys_clk           (sys_clk),
     .sys_rst_n         (rst_n),
-    .send_enable       (sys_state == SYS_SPI_TX && rd_fifo_num > 10), 
+    .send_enable       (sys_state == SYS_SPI_TX && rd_fifo_num > 10'd0),
     .device_id         (device_id),
     .token             (token),
     .timestamp         (timestamp),
     .jpeg_size         (saved_jpeg_size),
     .jpeg_fifo_rd_en   (spi_rd_en),
-    .jpeg_fifo_rd_data (spi_rd_data), 
+    .jpeg_fifo_rd_data (sdram_rd_data[7:0]),
     .spi_clk           (spi_sck),
     .spi_mosi          (spi_mosi),
     .spi_miso          (spi_miso),

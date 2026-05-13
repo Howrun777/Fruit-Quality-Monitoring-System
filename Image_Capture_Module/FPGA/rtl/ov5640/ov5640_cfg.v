@@ -141,8 +141,8 @@ assign  cfg_data_reg[052]  =       {16'h3000, 8'h00};
 assign  cfg_data_reg[053]  =       {16'h3004, 8'hff};
 assign  cfg_data_reg[054]  =       {16'h300e, 8'h58};
 assign  cfg_data_reg[055]  =       {16'h302e, 8'h00};
-assign  cfg_data_reg[056]  =       {16'h4300, 8'h30};
-assign  cfg_data_reg[057]  =       {16'h501f, 8'h00};
+assign  cfg_data_reg[056]  =       {16'h4300, 8'h61};
+assign  cfg_data_reg[057]  =       {16'h501f, 8'h01};
 assign  cfg_data_reg[058]  =       {16'h440e, 8'h00};
 assign  cfg_data_reg[059]  =       {16'h5000, 8'ha7};
 assign  cfg_data_reg[060]  =       {16'h3a0f, 8'h30};
@@ -298,7 +298,7 @@ assign  cfg_data_reg[208]  =       {16'h3035, 8'h21};
 assign  cfg_data_reg[209]  =       {16'h3036, 8'h69};
 assign  cfg_data_reg[210]  =       {16'h3c07, 8'h07};
 assign  cfg_data_reg[211]  =       {16'h3820, 8'h47};//图像翻转
-assign  cfg_data_reg[212]  =       {16'h3821, 8'h20};//镜像 + JPEG enable
+assign  cfg_data_reg[212]  =       {16'h3821, 8'h00};//镜像
 assign  cfg_data_reg[213]  =       {16'h3814, 8'h31};
 assign  cfg_data_reg[214]  =       {16'h3815, 8'h31};
 assign  cfg_data_reg[215]  =       {16'h3800, 8'h00};
@@ -337,11 +337,11 @@ assign  cfg_data_reg[247]  =       {16'h4837, 8'h16};
 assign  cfg_data_reg[248]  =       {16'h3824, 8'h04};
 assign  cfg_data_reg[249]  =       {16'h5001, 8'h83};
 assign  cfg_data_reg[250]  =       {16'h3503, 8'h00};
-assign  cfg_data_reg[251]  =       {16'h3002, 8'h00};
-assign  cfg_data_reg[252]  =       {16'h3006, 8'hff};
-assign  cfg_data_reg[253]  =       {16'h4713, 8'h03};
-assign  cfg_data_reg[254]  =       {16'h4407, 8'h04};
-assign  cfg_data_reg[255]  =       {16'h3821, 8'h20};
+assign  cfg_data_reg[251]  =       {16'h3008, 8'h02};
+assign  cfg_data_reg[252]  =       {16'h3008, 8'h02};
+assign  cfg_data_reg[253]  =       {16'h3008, 8'h02};
+assign  cfg_data_reg[254]  =       {16'h3008, 8'h02};
+assign  cfg_data_reg[255]  =       {16'h3008, 8'h02};
 
 //-------------------------------------------------------
 

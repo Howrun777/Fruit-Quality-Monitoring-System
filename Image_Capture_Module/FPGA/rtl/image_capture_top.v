@@ -16,10 +16,10 @@ module image_capture_top (
     output wire        ds, shcp, stcp, oe, // 数码管
     
     // 【新增】4个 Debug LED (低电平亮)
-    output wire        led_1,          // SDRAM 初始化完成 (常亮)
-    output wire        led_2,          // 指令解析成功，正在抓图
-    output wire        led_3,          // 抓图完成，正在 SPI 发送
-    output wire        led_4,          // 发送完毕 (大满贯，亮1秒)
+    output wire        led_1,          // SDRAM 初始化完成
+    output wire        led_2,          // OV5640 SCCB 初始化完成
+    output wire        led_3,          // OV5640 已输出帧，或正在抓图
+    output wire        led_4,          // SPI 正在发送或发送完成脉冲
     
     // 2. 摄像头接口
     input  wire [7:0]  ov5640_data,
@@ -61,6 +61,8 @@ reg [2:0] sys_state;
 reg       capture_req;
 wire      spi_done;
 wire      sdram_init_end;
+wire      cfg_done;
+wire      cam_active;
 
 reg       wr_rst_req;
 reg       rd_rst_req;
@@ -172,7 +174,7 @@ always @(posedge sys_clk or negedge rst_n) begin
     end else begin
         wr_rst_req <= 0; rd_rst_req <= 0;
         case (sys_state)
-            SYS_INIT: if (sdram_init_end && cfg_done) sys_state <= SYS_IDLE;
+            SYS_INIT: if (sdram_init_end && cfg_done && cam_active) sys_state <= SYS_IDLE;
             SYS_IDLE: begin
                 if (cmd_accept) begin
                     wr_rst_req <= 1;
@@ -208,7 +210,7 @@ always @(posedge sys_clk or negedge rst_n) begin
     if (!rst_n) begin
         led4_r <= 1; led4_timer <= 0;
     end else begin
-        // LED 4: SPI 发送完成 (亮 1 秒钟后，所有灯复位)
+        // LED 4: SPI 发送完成后继续亮 1 秒，便于肉眼观察
         if (spi_done) begin
             led4_r <= 0;
             led4_timer <= 26'd50_000_000; // 50M = 1秒
@@ -221,17 +223,16 @@ always @(posedge sys_clk or negedge rst_n) begin
     end
 end
 
-assign led_1 = ~sdram_init_end; // 初始化完成后拉低点亮 (常亮)
-assign led_2 = ~(sys_state == SYS_CAPTURE);
-assign led_3 = ~(sys_state == SYS_SPI_TX);
-assign led_4 = led4_r;
+assign led_1 = ~sdram_init_end;
+assign led_2 = ~cfg_done;
+assign led_3 = ~((cam_active && (sys_state != SYS_SPI_TX)) || (sys_state == SYS_CAPTURE));
+assign led_4 = ((sys_state == SYS_SPI_TX) ? 1'b0 : led4_r);
 //====================================================================//
 // 5. OV5640 摄像头（已修复：加入初始化 + 正确数据流）
 //====================================================================//
 
 wire        cam_wr_en_unused;
 wire [15:0] cam_data_unused;
-wire        cfg_done;
 
 // 摄像头初始化 + 数据输出
 ov5640_top u_ov5640 (
@@ -252,6 +253,42 @@ ov5640_top u_ov5640 (
     .ov5640_wr_en   (cam_wr_en_unused),
     .ov5640_data_out(cam_data_unused)
 );
+
+reg        cam_vsync_meta;
+reg        cam_vsync_sync;
+reg        cam_vsync_d;
+reg        cam_href_meta;
+reg        cam_href_sync;
+reg        cam_href_d;
+reg [7:0]  cam_frame_seen;
+reg [15:0] cam_href_seen;
+
+always @(posedge sys_clk or negedge rst_n) begin
+    if (!rst_n) begin
+        cam_vsync_meta <= 1'b0;
+        cam_vsync_sync <= 1'b0;
+        cam_vsync_d    <= 1'b0;
+        cam_href_meta  <= 1'b0;
+        cam_href_sync  <= 1'b0;
+        cam_href_d     <= 1'b0;
+        cam_frame_seen <= 8'd0;
+        cam_href_seen  <= 16'd0;
+    end else begin
+        cam_vsync_meta <= ov5640_vsync;
+        cam_vsync_sync <= cam_vsync_meta;
+        cam_vsync_d    <= cam_vsync_sync;
+        cam_href_meta  <= ov5640_href;
+        cam_href_sync  <= cam_href_meta;
+        cam_href_d     <= cam_href_sync;
+
+        if (cam_vsync_sync && !cam_vsync_d && cam_frame_seen != 8'hff)
+            cam_frame_seen <= cam_frame_seen + 8'd1;
+        if (cam_href_sync && !cam_href_d && cam_href_seen != 16'hffff)
+            cam_href_seen <= cam_href_seen + 16'd1;
+    end
+end
+
+assign cam_active = (cam_frame_seen >= 8'd2) && (cam_href_seen != 16'd0);
 
 //======================================================//
 // JPEG 捕获模块（新版本）

@@ -46,6 +46,8 @@ static void wifi_status_callback(wifi_status_t status, const char* ssid, const c
 static void upload_vision_data(parsed_packet_t* packet);
 static void print_system_info(void);
 static void blink_led_task(void* pvParameters);
+static void debug_dump_bytes(const char* label, const uint8_t* data, size_t len, size_t max_len);
+static void debug_print_packet(const parsed_packet_t* packet);
 
 // 🌟 合宙 LuatOS 板子自带的 LED 测试灯通常在 GPIO12 或 GPIO13
 #define LED_PIN 12  
@@ -195,14 +197,19 @@ static void spi_data_task(void* pvParameters) {
                 if (read_len > 0) {
                     // 收到数据，LED 快闪一下表示正在解析
                     digitalWrite(LED_PIN, HIGH);
-                    ESP_LOGI(TAG, "Received %d bytes, parsing...", read_len);
-                    
+                    ESP_LOGI(TAG, "SPI RX: received %u bytes, parsing...", (unsigned)read_len);
+                    debug_dump_bytes("SPI RX preview", s_spi_packet_buffer, read_len, DEBUG_SPI_DUMP_BYTES);
+
                     uint8_t state = protocol_parser_feed(&s_parser, s_spi_packet_buffer, read_len);
                     ESP_LOGI(TAG, "Parser state: %s", protocol_parser_state_str(state));
-                    
+
                     if (protocol_parser_is_complete(&s_parser)) {
                         xSemaphoreGive(s_data_ready_semaphore);
                         ESP_LOGI(TAG, "Packet complete! Giving semaphore.");
+                    } else if (protocol_parser_has_error(&s_parser)) {
+                        ESP_LOGE(TAG, "Protocol parser error after %u SPI bytes", (unsigned)read_len);
+                        protocol_parser_reset(&s_parser);
+                        digitalWrite(LED_PIN, LOW);
                     }
                 }
             }
@@ -218,7 +225,9 @@ static void data_processing_task(void* pvParameters) {
             ESP_LOGI(TAG, "Processing complete packet...");
             protocol_parser_get_packet(&s_parser, &packet);
             if (packet.valid) {
-                ESP_LOGI(TAG, "Packet valid! Queuing for upload (size: %d)...", packet.file_size);
+                debug_print_packet(&packet);
+                debug_dump_bytes("JPEG preview", packet.jpeg_data, packet.file_size, 32);
+                ESP_LOGI(TAG, "Packet valid! Queuing for upload (size: %u)...", (unsigned)packet.file_size);
                 if (xQueueSend(s_upload_queue, &packet, pdMS_TO_TICKS(1000)) == pdTRUE) {
                     ESP_LOGI(TAG, "Packet queued! Waiting for HTTP upload...");
                     xSemaphoreTake(s_upload_done_semaphore, portMAX_DELAY);
@@ -264,6 +273,8 @@ static void wifi_status_callback(wifi_status_t status, const char* ssid, const c
 
 static void upload_vision_data(parsed_packet_t* packet) {
     if (packet == nullptr || !packet->valid) return;
+    ESP_LOGI(TAG, "HTTP upload start: device_id=%s, token=%s, timestamp=%s, jpeg_size=%u",
+             packet->device_id, packet->token, packet->timestamp, (unsigned)packet->file_size);
     vision_upload_request_t request = {
         .device_id = packet->device_id,
         .token = packet->token,
@@ -271,12 +282,45 @@ static void upload_vision_data(parsed_packet_t* packet) {
         .jpeg_data = packet->jpeg_data,
         .jpeg_size = packet->file_size
     };
-    vision_upload_response_t response;
+    vision_upload_response_t response = {};
     esp_err_t err = vision_http_upload(&request, &response);
-    
+
     if (err == ESP_OK) {
-        ESP_LOGI(TAG, "Upload SUCCESS! Msg: %s", response.message);
+        ESP_LOGI(TAG, "HTTP upload SUCCESS: status=%d, msg=%s", response.status_code, response.message);
     } else {
-        ESP_LOGE(TAG, "Upload FAILED! Code: %d", response.status_code);
+        ESP_LOGE(TAG, "HTTP upload FAILED: err=%s, status=%d, msg=%s",
+                 esp_err_to_name(err), response.status_code, response.message);
     }
+}
+
+static void debug_dump_bytes(const char* label, const uint8_t* data, size_t len, size_t max_len) {
+    if (data == nullptr || len == 0) {
+        ESP_LOGI(TAG, "%s: empty", label);
+        return;
+    }
+
+    size_t dump_len = (len < max_len) ? len : max_len;
+    Serial.printf("[%s] total=%u, showing=%u\n", label, (unsigned)len, (unsigned)dump_len);
+    for (size_t i = 0; i < dump_len; i++) {
+        if ((i % 16) == 0) {
+            Serial.printf("%04u: ", (unsigned)i);
+        }
+        Serial.printf("%02X ", data[i]);
+        if ((i % 16) == 15 || i == dump_len - 1) {
+            Serial.println();
+        }
+    }
+}
+
+static void debug_print_packet(const parsed_packet_t* packet) {
+    if (packet == nullptr) return;
+
+    ESP_LOGI(TAG, "========== Parsed SPI Packet ==========");
+    ESP_LOGI(TAG, "Device ID : %s", packet->device_id);
+    ESP_LOGI(TAG, "Token     : %s", packet->token);
+    ESP_LOGI(TAG, "Timestamp : %s", packet->timestamp);
+    ESP_LOGI(TAG, "JPEG Size : %u bytes", (unsigned)packet->file_size);
+    ESP_LOGI(TAG, "Packet Size: %u bytes", (unsigned)(packet->file_size + 78));
+    ESP_LOGI(TAG, "Valid     : %s", packet->valid ? "true" : "false");
+    ESP_LOGI(TAG, "=======================================");
 }

@@ -1,0 +1,261 @@
+{
+	"partitions" : [
+		{
+			"name" : "Top",
+			"pins" : [
+				{
+					"name" : "beep",
+					"strict" : false
+				},
+				{
+					"name" : "ds",
+					"strict" : false
+				},
+				{
+					"name" : "shcp",
+					"strict" : false
+				},
+				{
+					"name" : "stcp",
+					"strict" : false
+				},
+				{
+					"name" : "led_1",
+					"strict" : false
+				},
+				{
+					"name" : "led_2",
+					"strict" : false
+				},
+				{
+					"name" : "led_3",
+					"strict" : false
+				},
+				{
+					"name" : "led_4",
+					"strict" : false
+				},
+				{
+					"name" : "ov5640_rst_n",
+					"strict" : false
+				},
+				{
+					"name" : "sccb_scl",
+					"strict" : false
+				},
+				{
+					"name" : "sdram_ras_n",
+					"strict" : false
+				},
+				{
+					"name" : "sdram_cas_n",
+					"strict" : false
+				},
+				{
+					"name" : "sdram_we_n",
+					"strict" : false
+				},
+				{
+					"name" : "sdram_ba[0]",
+					"strict" : false
+				},
+				{
+					"name" : "sdram_ba[1]",
+					"strict" : false
+				},
+				{
+					"name" : "sdram_addr[0]",
+					"strict" : false
+				},
+				{
+					"name" : "sdram_addr[1]",
+					"strict" : false
+				},
+				{
+					"name" : "sdram_addr[2]",
+					"strict" : false
+				},
+				{
+					"name" : "sdram_addr[3]",
+					"strict" : false
+				},
+				{
+					"name" : "sdram_addr[4]",
+					"strict" : false
+				},
+				{
+					"name" : "sdram_addr[5]",
+					"strict" : false
+				},
+				{
+					"name" : "sdram_addr[6]",
+					"strict" : false
+				},
+				{
+					"name" : "sdram_addr[7]",
+					"strict" : false
+				},
+				{
+					"name" : "sdram_addr[8]",
+					"strict" : false
+				},
+				{
+					"name" : "sdram_addr[9]",
+					"strict" : false
+				},
+				{
+					"name" : "sdram_addr[10]",
+					"strict" : false
+				},
+				{
+					"name" : "sdram_addr[11]",
+					"strict" : false
+				},
+				{
+					"name" : "sdram_addr[12]",
+					"strict" : false
+				},
+				{
+					"name" : "spi_sck",
+					"strict" : false
+				},
+				{
+					"name" : "spi_mosi",
+					"strict" : false
+				},
+				{
+					"name" : "spi_cs_n",
+					"strict" : false
+				},
+				{
+					"name" : "sccb_sda",
+					"strict" : false
+				},
+				{
+					"name" : "sdram_dq[0]",
+					"strict" : false
+				},
+				{
+					"name" : "sdram_dq[1]",
+					"strict" : false
+				},
+				{
+					"name" : "sdram_dq[2]",
+					"strict" : false
+				},
+				{
+					"name" : "sdram_dq[3]",
+					"strict" : false
+				},
+				{
+					"name" : "sdram_dq[4]",
+					"strict" : false
+				},
+				{
+					"name" : "sdram_dq[5]",
+					"strict" : false
+				},
+				{
+					"name" : "sdram_dq[6]",
+					"strict" : false
+				},
+				{
+					"name" : "sdram_dq[7]",
+					"strict" : false
+				},
+				{
+					"name" : "sdram_dq[8]",
+					"strict" : false
+				},
+				{
+					"name" : "sdram_dq[9]",
+					"strict" : false
+				},
+				{
+					"name" : "sdram_dq[10]",
+					"strict" : false
+				},
+				{
+					"name" : "sdram_dq[11]",
+					"strict" : false
+				},
+				{
+					"name" : "sdram_dq[12]",
+					"strict" : false
+				},
+				{
+					"name" : "sdram_dq[13]",
+					"strict" : false
+				},
+				{
+					"name" : "sdram_dq[14]",
+					"strict" : false
+				},
+				{
+					"name" : "sdram_dq[15]",
+					"strict" : false
+				},
+				{
+					"name" : "sys_rst_n",
+					"strict" : false
+				},
+				{
+					"name" : "sys_clk",
+					"strict" : false
+				},
+				{
+					"name" : "ov5640_pclk",
+					"strict" : false
+				},
+				{
+					"name" : "key1",
+					"strict" : false
+				},
+				{
+					"name" : "ov5640_data[3]",
+					"strict" : false
+				},
+				{
+					"name" : "ov5640_data[4]",
+					"strict" : false
+				},
+				{
+					"name" : "ov5640_data[1]",
+					"strict" : false
+				},
+				{
+					"name" : "ov5640_data[2]",
+					"strict" : false
+				},
+				{
+					"name" : "ov5640_data[6]",
+					"strict" : false
+				},
+				{
+					"name" : "ov5640_data[7]",
+					"strict" : false
+				},
+				{
+					"name" : "ov5640_data[5]",
+					"strict" : false
+				},
+				{
+					"name" : "ov5640_href",
+					"strict" : false
+				},
+				{
+					"name" : "ov5640_data[0]",
+					"strict" : false
+				},
+				{
+					"name" : "ov5640_vsync",
+					"strict" : false
+				},
+				{
+					"name" : "uart_rx",
+					"strict" : false
+				}
+			]
+		}
+	]
+}

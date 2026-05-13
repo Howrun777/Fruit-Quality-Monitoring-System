@@ -66,5 +66,6 @@
 
 #define DEBUG_ENABLED 1
 #define DEBUG_PRINTF(...) if (DEBUG_ENABLED) Serial.printf(__VA_ARGS__)
+#define DEBUG_SPI_DUMP_BYTES 128
 
 #endif // CONFIG_H

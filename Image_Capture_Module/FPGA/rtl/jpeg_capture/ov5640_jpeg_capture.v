@@ -20,16 +20,17 @@ module ov5640_jpeg_capture (
 assign sccb_scl = 1'bz;
 assign sccb_sda = 1'bz;
 
-localparam ST_IDLE   = 2'd0;
-localparam ST_SEARCH = 2'd1;
-localparam ST_STREAM = 2'd2;
-localparam ST_DONE   = 2'd3;
+localparam ST_IDLE     = 3'd0;
+localparam ST_SEARCH   = 3'd1;
+localparam ST_STREAM   = 3'd2;
+localparam ST_DONE     = 3'd3;
+localparam ST_WAIT_LOW = 3'd4;
 
-reg [1:0]  state;
+reg [2:0]  state;
 reg        req_meta;
 reg        req_sync;
 reg        req_sync_d;
-wire       req_rise = req_sync & ~req_sync_d;
+wire       req_active = req_sync;
 
 reg        vsync_d;
 reg        href_d;
@@ -69,13 +70,15 @@ always @(posedge ov5640_pclk or negedge sys_rst_n) begin
         case (state)
             ST_IDLE: begin
                 byte_cnt <= 32'd0;
-                if (req_rise)
+                if (req_active)
                     state <= ST_SEARCH;
             end
 
             ST_SEARCH: begin
                 byte_cnt <= 32'd0;
-                if (href_d && ov5640_href && data_d == 8'hFF && ov5640_data == 8'hD8) begin
+                if (!req_active) begin
+                    state <= ST_IDLE;
+                end else if (href_d && ov5640_href && data_d == 8'hFF && ov5640_data == 8'hD8) begin
                     jpeg_data    <= 8'hFF;
                     jpeg_data_en <= 1'b1;
                     byte_cnt     <= 32'd1;
@@ -84,7 +87,9 @@ always @(posedge ov5640_pclk or negedge sys_rst_n) begin
             end
 
             ST_STREAM: begin
-                if (href_d) begin
+                if (!req_active) begin
+                    state <= ST_IDLE;
+                end else if (href_d) begin
                     jpeg_data    <= data_d;
                     jpeg_data_en <= 1'b1;
                     byte_cnt     <= byte_cnt + 32'd1;
@@ -100,7 +105,14 @@ always @(posedge ov5640_pclk or negedge sys_rst_n) begin
                 jpeg_data_en <= 1'b1;
                 jpeg_size    <= byte_cnt + 32'd1;
                 capture_done <= 1'b1;
-                state        <= ST_IDLE;
+                state        <= ST_WAIT_LOW;
+            end
+
+            ST_WAIT_LOW: begin
+                byte_cnt <= 32'd0;
+                capture_done <= 1'b1;
+                if (!req_active)
+                    state <= ST_IDLE;
             end
 
             default: state <= ST_IDLE;
@@ -108,7 +120,8 @@ always @(posedge ov5640_pclk or negedge sys_rst_n) begin
 
         // 只有在接收数据流的中途(ST_STREAM)，遇到下一帧的 VSYNC 上升沿(帧异常结束)，才强制退出
         // 原来错误地检测 VSYNC 下降沿，会误将新帧开始误判为异常，导致错过 FF D8
-        if (state == ST_STREAM && ov5640_vsync && !vsync_d) begin
+        if (state == ST_STREAM && ov5640_vsync && !vsync_d &&
+            !(href_d && data_d == 8'hFF && ov5640_data == 8'hD9)) begin
             state <= ST_IDLE;
         end
     end

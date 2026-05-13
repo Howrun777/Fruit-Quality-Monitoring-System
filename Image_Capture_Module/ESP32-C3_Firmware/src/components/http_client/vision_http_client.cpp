@@ -16,6 +16,9 @@ static const char* TAG = "VISION_HTTP";
 static char s_server_host[64] = SERVER_HOST;
 static uint16_t s_server_port = SERVER_PORT;
 static bool s_initialized = false;
+static char* s_response_buffer = nullptr;
+static size_t s_response_capacity = 0;
+static size_t s_response_len = 0;
 
 // Forward declarations
 static esp_err_t http_event_handler(esp_http_client_event_t* evt);
@@ -74,13 +77,26 @@ esp_err_t vision_http_upload(const vision_upload_request_t* request,
 
     ESP_LOGI(TAG, "Starting vision upload...");
     ESP_LOGI(TAG, "  Device ID: %s", request->device_id);
+    ESP_LOGI(TAG, "  Token: %s", request->token);
     ESP_LOGI(TAG, "  Timestamp: %s", request->timestamp);
     ESP_LOGI(TAG, "  JPEG size: %d bytes", request->jpeg_size);
+    ESP_LOGI(TAG, "  JPEG SOI/EOI: %02X %02X ... %02X %02X",
+             request->jpeg_size >= 2 ? request->jpeg_data[0] : 0,
+             request->jpeg_size >= 2 ? request->jpeg_data[1] : 0,
+             request->jpeg_size >= 2 ? request->jpeg_data[request->jpeg_size - 2] : 0,
+             request->jpeg_size >= 2 ? request->jpeg_data[request->jpeg_size - 1] : 0);
+
+    char response_buffer[256] = {0};
+    s_response_buffer = response_buffer;
+    s_response_capacity = sizeof(response_buffer);
+    s_response_len = 0;
 
     // Create HTTP client
     esp_http_client_handle_t client = create_client(request);
     if (client == nullptr) {
         ESP_LOGE(TAG, "Failed to create HTTP client");
+        s_response_buffer = nullptr;
+        s_response_capacity = 0;
         return ESP_FAIL;
     }
 
@@ -90,6 +106,8 @@ esp_err_t vision_http_upload(const vision_upload_request_t* request,
     if (err != ESP_OK) {
         ESP_LOGE(TAG, "Failed to set post field: %s", esp_err_to_name(err));
         esp_http_client_cleanup(client);
+        s_response_buffer = nullptr;
+        s_response_capacity = 0;
         return err;
     }
 
@@ -102,22 +120,18 @@ esp_err_t vision_http_upload(const vision_upload_request_t* request,
     if (response != nullptr) {
         response->status_code = status_code;
         response->success = (err == ESP_OK && status_code == 200);
-        
-        // Read response body
-        char response_buffer[256] = {0};
-        int read_len = esp_http_client_read(client, response_buffer, 
-                                            sizeof(response_buffer) - 1);
-        if (read_len > 0) {
-            response_buffer[read_len] = '\0';
-            strncpy(response->message, response_buffer, sizeof(response->message) - 1);
-        }
+        strncpy(response->message, response_buffer, sizeof(response->message) - 1);
     }
 
-    ESP_LOGI(TAG, "HTTP request completed, status: %d", status_code);
+    ESP_LOGI(TAG, "HTTP request completed, err=%s, status=%d, response=%s",
+             esp_err_to_name(err), status_code, response_buffer[0] ? response_buffer : "(empty)");
 
     esp_http_client_cleanup(client);
+    s_response_buffer = nullptr;
+    s_response_capacity = 0;
+    s_response_len = 0;
 
-    return (status_code == 200) ? ESP_OK : ESP_FAIL;
+    return (err == ESP_OK && status_code == 200) ? ESP_OK : ESP_FAIL;
 }
 
 void vision_http_upload_async(const vision_upload_request_t* request,
@@ -214,6 +228,15 @@ static esp_err_t http_event_handler(esp_http_client_event_t* evt)
             break;
         case HTTP_EVENT_ON_DATA:
             ESP_LOGD(TAG, "HTTP_EVENT_ON_DATA, len=%d", evt->data_len);
+            if (s_response_buffer != nullptr && s_response_capacity > 0 && evt->data != nullptr) {
+                size_t available = s_response_capacity - s_response_len - 1;
+                size_t copy_len = ((size_t)evt->data_len < available) ? (size_t)evt->data_len : available;
+                if (copy_len > 0) {
+                    memcpy(s_response_buffer + s_response_len, evt->data, copy_len);
+                    s_response_len += copy_len;
+                    s_response_buffer[s_response_len] = '\0';
+                }
+            }
             break;
         case HTTP_EVENT_ON_FINISH:
             ESP_LOGD(TAG, "HTTP_EVENT_ON_FINISH");

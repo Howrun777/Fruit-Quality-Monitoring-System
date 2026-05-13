@@ -1,0 +1,14 @@
+Analysis & Synthesis Status : Successful - Wed May 13 15:27:35 2026
+Quartus Prime Version : 24.1std.0 Build 1077 03/04/2025 SC Lite Edition
+Revision Name : image_capture_top
+Top-level Entity Name : image_capture_top
+Family : Cyclone IV E
+Total logic elements : 4,595
+    Total combinational functions : 3,483
+    Dedicated logic registers : 2,642
+Total registers : 2642
+Total pins : 72
+Total virtual pins : 0
+Total memory bits : 24,576
+Embedded Multiplier 9-bit elements : 0
+Total PLLs : 1

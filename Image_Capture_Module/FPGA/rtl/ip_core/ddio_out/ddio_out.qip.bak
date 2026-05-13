@@ -1,0 +1,22 @@
+<<<<<<< HEAD:Image_Capture_Module/FPGA/project/ip_core/ddio_out/ddio_out.qip
+set_global_assignment -name IP_TOOL_NAME "ALTDDIO_OUT"
+set_global_assignment -name IP_TOOL_VERSION "24.1"
+set_global_assignment -name IP_GENERATED_DEVICE_FAMILY "{Cyclone IV E}"
+set_global_assignment -name VERILOG_FILE [file join $::quartus(qip_path) "ddio_out.v"]
+set_global_assignment -name MISC_FILE [file join $::quartus(qip_path) "ddio_out.bsf"]
+set_global_assignment -name MISC_FILE [file join $::quartus(qip_path) "ddio_out_inst.v"]
+set_global_assignment -name MISC_FILE [file join $::quartus(qip_path) "ddio_out_bb.v"]
+set_global_assignment -name MISC_FILE [file join $::quartus(qip_path) "ddio_out.inc"]
+set_global_assignment -name MISC_FILE [file join $::quartus(qip_path) "ddio_out.cmp"]
+set_global_assignment -name MISC_FILE [file join $::quartus(qip_path) "ddio_out.ppf"]
+=======
+set_global_assignment -name IP_TOOL_NAME "ALTDDIO_OUT"
+set_global_assignment -name IP_TOOL_VERSION "13.0"
+set_global_assignment -name VERILOG_FILE [file join $::quartus(qip_path) "ddio_out.v"]
+set_global_assignment -name MISC_FILE [file join $::quartus(qip_path) "ddio_out.bsf"]
+set_global_assignment -name MISC_FILE [file join $::quartus(qip_path) "ddio_out_inst.v"]
+set_global_assignment -name MISC_FILE [file join $::quartus(qip_path) "ddio_out_bb.v"]
+set_global_assignment -name MISC_FILE [file join $::quartus(qip_path) "ddio_out.inc"]
+set_global_assignment -name MISC_FILE [file join $::quartus(qip_path) "ddio_out.cmp"]
+set_global_assignment -name MISC_FILE [file join $::quartus(qip_path) "ddio_out.ppf"]
+>>>>>>> 0eefbb50fb538d866accb9c2aca1edc28577a0ed:Image_Capture_Module/FPGA/rtl/ip_core/ddio_out/ddio_out.qip

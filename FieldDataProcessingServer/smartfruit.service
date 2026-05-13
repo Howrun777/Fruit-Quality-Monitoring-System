@@ -1,0 +1,14 @@
+[Unit]
+Description=Smart Fruit System V4.0
+After=network.target mysql.service
+
+[Service]
+Type=simple
+WorkingDirectory=/home/Howrun1/FruitQualityMonitoringSystem/FieldDataProcessingServer/build
+ExecStart=/home/Howrun1/FruitQualityMonitoringSystem/FieldDataProcessingServer/build/FieldDataProcessingServer
+Restart=always
+RestartSec=5
+User=Howrun1
+
+[Install]
+WantedBy=multi-user.target

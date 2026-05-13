@@ -74,7 +74,7 @@ OV5640 原始 640×480 JPEG → stb_image 解码 → Center Crop 480×480 → Re
 
 ### 2.1 主控 ESP32 与 FPGA 的 UART 通信
 
-> **重要**：主控 ESP32 仅使用 **GPIO 5** 作为 UART TX 向 FPGA 发送触发命令，无需 RX。
+> **重要**：主控 ESP32 仅使用 **GPIO 5** 作为 UART TX 向 FPGA 发送触发命令，无需 RX
 
 
 | 属性          | 值       |
